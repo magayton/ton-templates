@@ -4,8 +4,6 @@
 import "@stdlib/ownable";
 import "@stdlib/stoppable";
 
-// TODO : UPDATE the receive function with deposit message and plain text with a method for the 2
-
 // ============================================================================
 // CONSTANTS AND CONFIGURATION
 // ============================================================================
@@ -112,6 +110,9 @@ contract TONPaymentHandler with Ownable, Resumable {
     // Could have been done with contract parameters
     // but for simplicity and automatisation we initialize with init() and sender()
     // https://docs.tact-lang.org/book/gas-best-practices/#prefer-contract-parameters-to-init-and-contract-fields
+    //
+    // Important to note : deployment update the totalDeposited and the depositCount
+    // Because it triggers the receive() method
     // ========================================================================
 
     // Initialize contract with owner
@@ -197,11 +198,10 @@ contract TONPaymentHandler with Ownable, Resumable {
         // Validate withdrawal amount
         require(msg.amount > 0, "Withdrawal amount must be positive");
 
-        // Ensure sufficient balance for withdrawal + storage reserve
-        let currentBalance: Int = myBalance();
 
+        // Safe withdrawal check to keep enough TON for storage rent
         require(
-            currentBalance >= msg.amount + MIN_TON_FOR_STORAGE,
+            msg.amount < myBalance() - context().value - MIN_TON_FOR_STORAGE,
             "Insufficient balance for withdrawal",
         );
 
