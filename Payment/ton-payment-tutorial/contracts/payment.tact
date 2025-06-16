@@ -214,10 +214,11 @@ contract TONPaymentHandler with Ownable, Resumable {
         }
 
         // Send funds (https://docs.tact-lang.org/book/gas-best-practices/#use-message-function-for-non-deployment-messages)
+        // https://docs.tact-lang.org/cookbook/single-communication/#how-to-send-a-message-with-the-remaining-value
         message(MessageParameters {
             to: msg.destination,
             value: msg.amount,
-            mode: 1,
+            mode: SendRemainingValue | SendIgnoreErrors,
             bounce: true, // Use bounced messages for error handling
             body: messageBody,
         });
