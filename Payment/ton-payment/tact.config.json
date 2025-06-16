@@ -2,9 +2,9 @@
   "$schema": "https://raw.githubusercontent.com/tact-lang/tact/main/src/config/configSchema.json",
   "projects": [
     {
-      "name": "Payment",
+      "name": "TONPaymentHandler",
       "path": "contracts/payment.tact",
-      "output": "build/Payment",
+      "output": "build/TONPaymentHandler",
       "options": {
         "debug": false,
         "external": false
