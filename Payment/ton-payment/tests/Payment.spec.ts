@@ -1,6 +1,6 @@
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { toNano, Cell, Address } from '@ton/core';
-import { TONPaymentHandler, loadDepositReceived } from '../build/Payment/Payment_TONPaymentHandler';
+import { TONPaymentHandler, loadDepositReceived } from '../build/TONPaymentHandler/TONPaymentHandler_TONPaymentHandler';
 import '@ton/test-utils';
 
 describe('TONPaymentHandler', () => {
