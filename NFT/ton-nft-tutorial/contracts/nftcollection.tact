@@ -48,8 +48,10 @@ contract NftCollection(
         
         emit(MintExecuted{
             minter: sender,
-            itemId: self.nextItemIndex - 1, // The item index is incremented after minting
+            itemId: self.nextItemIndex,
         }.toCell());
+
+        self.nextItemIndex += 1;
     }
 
     inline fun mint(senderAddr: Address, msgValue: Int) {
@@ -76,8 +78,6 @@ contract NftCollection(
                     forwardPayload: emptySlice()
             }.toCell(),
         });
-        
-        self.nextItemIndex += 1;
     }
 
     // Burn NFT
