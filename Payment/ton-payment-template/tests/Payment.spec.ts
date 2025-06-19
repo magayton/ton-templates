@@ -21,7 +21,7 @@ describe('Payment', () => {
         nonOwner = await blockchain.treasury('nonOwner');
 
         // Deploy the contract
-        payment = blockchain.openContract(await Payment.fromInit());
+        payment = blockchain.openContract(await Payment.fromInit(deployer.address, false));
 
         const deployResult = await payment.send(
             deployer.getSender(),

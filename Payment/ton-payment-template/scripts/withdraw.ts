@@ -5,7 +5,7 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider) {
     console.log('Withdrawing from Payment contract ...');
 
-    const payment = provider.open(await Payment.fromInit());
+    const payment = provider.open(await Payment.fromInit(provider.sender().address!, false));
 
     console.log('Contract address:', payment.address.toString());
 
