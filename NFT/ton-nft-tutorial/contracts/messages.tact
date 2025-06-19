@@ -35,6 +35,7 @@ message(0x89a35a1f) Mint{}
 message(0x1f0f3ca5) Burn {
     queryId: Int as uint64;
     itemIndex: Int as uint64;
+    owner: Address;
 }
 
 // Core NFT Messages (TEP-62)

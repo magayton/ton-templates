@@ -329,7 +329,7 @@ describe('NFTCollection', () => {
         it('should burn NFT successfully', async () => {
             const nftAddress = await nFTCollection.getGetNftAddressByIndex(0n);
 
-            // Burn NFT (only owner can call this)
+            // Burn NFT (only collection owner can call this)
             const burnResult = await nFTCollection.send(
                 deployer.getSender(),
                 {
@@ -338,7 +338,8 @@ describe('NFTCollection', () => {
                 {
                     $$type: 'Burn',
                     queryId: 123n,
-                    itemIndex: 0n
+                    itemIndex: 0n,
+                    owner: user1.address,
                 }
             );
 
@@ -372,7 +373,8 @@ describe('NFTCollection', () => {
                 {
                     $$type: 'Burn',
                     queryId: 123n,
-                    itemIndex: 0n
+                    itemIndex: 0n,
+                    owner: user1.address,
                 }
             );
 
@@ -392,7 +394,8 @@ describe('NFTCollection', () => {
                 {
                     $$type: 'Burn',
                     queryId: 123n,
-                    itemIndex: 999n // Non-existent index
+                    itemIndex: 999n, // Non-existent index
+                    owner: user1.address,
                 }
             );
 

@@ -6,7 +6,10 @@ export async function run(provider: NetworkProvider) {
     console.log('Burning NFT...');
 
     // Replace with your deployed collection address
-    const collectionAddress = Address.parse('YOUR_COLLECTION_ADDRESS_HERE');
+    const collectionAddress = Address.parse('kQABfyPBGln1NMSFzufVjEvoeiiRGopj6V6cZI-0aA0IyN7u');
+
+    // Replace with the owner address of the NFT you want to burn
+    const ownerAddress = Address.parse('0QCxbHUYTYL-iQam3tOEnjZIxS-CJ9sh0C_FM1ucBpIYMG--');
     
     // Replace with the item index you want to burn
     const itemIndex = 0n;
@@ -26,6 +29,7 @@ export async function run(provider: NetworkProvider) {
                 $$type: 'Burn',
                 queryId: 0n,
                 itemIndex: itemIndex,
+                owner: ownerAddress
             },
         );
 

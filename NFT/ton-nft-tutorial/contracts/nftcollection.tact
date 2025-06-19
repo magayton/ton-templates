@@ -82,7 +82,7 @@ contract NftCollection(
 
     // Burn NFT
     // Here it is the collection owner that can burn NFT
-    // If you want to allow the NFT owner to burn it, you can add a "caller" paramter to the Burn message
+    // If you want to allow the NFT owner to burn it, you can add a "caller" parameter to the Burn message
     // And remove the check for the owner address to be the collection owner
     receive(msg: Burn) {
         throwUnless(ERROR_NOT_OWNER, sender() == self.ownerAddress);
@@ -99,7 +99,8 @@ contract NftCollection(
             bounce: true, // Bounce true to see the failed transaction and get back TONs sent
             body: Burn{
                 queryId: msg.queryId,
-                itemIndex: msg.itemIndex
+                itemIndex: msg.itemIndex,
+                owner: msg.owner // The NFT owner address
             }.toCell()
         });
         
@@ -253,13 +254,14 @@ contract NftItem
     receive(msg: Burn) {
         throwUnless(ERROR_NOT_COLLECTION, sender() == self.collectionAddress);
         
-        // Destroy the contract by sending remaining balance and destroying if zero
+        // Destroy the contract by sending remaining balance to the NFT owner
+        // and destroying contract if balance is zero (which will be the case after sending the balance)
         message(MessageParameters{
-            to: self.collectionAddress,
+            to: msg.owner,
             value: 0,
             mode: SendRemainingBalance | SendDestroyIfZero,
             bounce: false,
-            body: Excesses{queryId: msg.queryId}.toCell() // Not mandatory
+            body: emptyCell()
         });
     }
 

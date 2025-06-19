@@ -68,7 +68,8 @@ contract NftCollection(
             bounce: true,
             body: Burn{
                 queryId: msg.queryId,
-                itemIndex: msg.itemIndex
+                itemIndex: msg.itemIndex,
+                owner: msg.owner
             }.toCell()
         });
         
@@ -77,6 +78,7 @@ contract NftCollection(
             itemId: msg.itemIndex,
         }.toCell());
     }
+
 
     receive(msg: GetRoyaltyParams) {
         if (self.royaltyParams == null) {
@@ -207,11 +209,11 @@ contract NftItem
         throwUnless(ERROR_NOT_COLLECTION, sender() == self.collectionAddress);
         
         message(MessageParameters{
-            to: self.collectionAddress,
+            to: msg.owner,
             value: 0,
             mode: SendRemainingBalance | SendDestroyIfZero,
             bounce: false,
-            body: Excesses{queryId: msg.queryId}.toCell()
+            body: emptyCell()
         });
     }
 

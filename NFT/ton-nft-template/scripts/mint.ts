@@ -6,7 +6,7 @@ export async function run(provider: NetworkProvider) {
     console.log('Minting NFT...');
 
     // Replace with your deployed collection address
-    const collectionAddress = Address.parse('YOUR_COLLECTION_ADDRESS_HERE');
+    const collectionAddress = Address.parse('kQABfyPBGln1NMSFzufVjEvoeiiRGopj6V6cZI-0aA0IyN7u');
     
     const nFTCollection = provider.open(NftCollection.fromAddress(collectionAddress));
 

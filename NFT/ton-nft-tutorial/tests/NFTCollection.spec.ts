@@ -338,7 +338,8 @@ describe('NFTCollection', () => {
                 {
                     $$type: 'Burn',
                     queryId: 123n,
-                    itemIndex: 0n
+                    itemIndex: 0n,
+                    owner: user1.address 
                 }
             );
 
@@ -372,7 +373,8 @@ describe('NFTCollection', () => {
                 {
                     $$type: 'Burn',
                     queryId: 123n,
-                    itemIndex: 0n
+                    itemIndex: 0n,
+                    owner: user1.address
                 }
             );
 
@@ -392,7 +394,8 @@ describe('NFTCollection', () => {
                 {
                     $$type: 'Burn',
                     queryId: 123n,
-                    itemIndex: 999n // Non-existent index
+                    itemIndex: 999n, // Non-existent index
+                    owner: user1.address
                 }
             );
 
