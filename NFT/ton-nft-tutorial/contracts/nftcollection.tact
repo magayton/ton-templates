@@ -81,6 +81,9 @@ contract NftCollection(
     }
 
     // Burn NFT
+    // Here it is the collection owner that can burn NFT
+    // If you want to allow the NFT owner to burn it, you can add a "caller" paramter to the Burn message
+    // And remove the check for the owner address to be the collection owner
     receive(msg: Burn) {
         throwUnless(ERROR_NOT_OWNER, sender() == self.ownerAddress);
         throwUnless(ERROR_INVALID_INDEX, msg.itemIndex < self.nextItemIndex);
