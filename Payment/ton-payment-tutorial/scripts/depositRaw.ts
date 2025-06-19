@@ -18,12 +18,13 @@ export async function run(provider: NetworkProvider) {
         // Send plain TON (no message body)
         await payment.send(
             provider.sender(),
-            { value: depositAmount },
+            { value: depositAmount + toNano('0.05') }, // Deposit amount + gas
             null 
         );
         
     } catch (error) {
         console.error('Plain deposit failed:', error);
+        return;
     }
 
     console.log('Plain deposit sent successfully!');

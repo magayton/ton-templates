@@ -3,128 +3,23 @@
 
 import "@stdlib/ownable";
 import "@stdlib/stoppable";
-
-// ============================================================================
-// CONSTANTS AND CONFIGURATION
-// ============================================================================
+import "./messages";
 
 // Minimum TON to keep contract alive for storage rent
 const MIN_TON_FOR_STORAGE: Int = ton("0.05");
 
-struct ConfigData {
-    owner: Address;
-    isStopped: Bool;
-    totalDeposited: Int as coins;
-    totalWithdrawn: Int as coins;
-    depositCount: Int as uint32;
-}
-
-// ============================================================================
-// MESSAGE STRUCTURES
-// ============================================================================
-
-// Deposit TON to the contract with a purpose
-message Deposit {
-    // Purpose of the deposit
-    purpose: String;
-}
-
-// Withdraw TON from the contract (owner only)
-message Withdraw {
-    // Amount to withdraw in nanoTON (1 TON = 10^9 nanoTON)
-    // Using 'coins' serialization ensures proper handling of TON amounts
-    amount: Int as coins;
-
-    destination: Address;
-
-    // Comment for the withdrawal (optional)
-    comment: String?;
-}
-
-// Transfer ownership (owner only)
-message TransferOwnership {
-    newOwner: Address;
-}
-
-// ============================================================================
-// EVENTS
-// ============================================================================
-
-message DepositReceived {
-    // Address that made the deposit
-    sender: Address;
-
-    // Amount deposited in nanoTON
-    amount: Int as coins;
-
-    // Block timestamp when deposit was received
-    timestamp: Int as uint32;
-
-    // Associated purpose/metadata (optional)
-    purpose: String?;
-}
-
-message WithdrawalExecuted {
-    // Destination of withdrawal
-    destination: Address;
-
-    // Amount withdrawn in nanoTON
-    amount: Int as coins;
-
-    // Block timestamp of withdrawal
-    timestamp: Int as uint32;
-
-    // Comment for the withdrawal (optional)
-    comment: String?;
-}
-
-// ============================================================================
-// MAIN CONTRACT
-// ============================================================================
-
 // Contract inherits Ownable for access control and Resumable for stop/resume functionality
-contract TONPaymentHandler with Ownable, Resumable {
-    // ========================================================================
-    // STATE VARIABLES
-    // ========================================================================
-    // Contract owner (inherited from Ownable)
-    owner: Address;
-
-    // Contract stopped state (required by Resumable trait)
-    stopped: Bool = false;
-
-    // Total amount deposited to the contract (excluding gas reserves)
-    totalDeposited: Int as coins = 0;
-
-    // Total amount withdrawn from the contract (for tracking)
-    totalWithdrawn: Int as coins = 0;
-
-    // Total number of deposits received
-    depositCount: Int as uint32 = 0;
-
-    // Mapping to track deposits per address
-    depositsByAddress: map<Address, Int as coins>;
-
-    // ========================================================================
-    // CONSTRUCTOR
-    // Could have been done with contract parameters
-    // but for simplicity and automatisation we initialize with init() and sender()
-    // https://docs.tact-lang.org/book/gas-best-practices/#prefer-contract-parameters-to-init-and-contract-fields
-    //
-    // Important to note : deployment update the totalDeposited and the depositCount
-    // Because it triggers the receive() method
-    // ========================================================================
-
-    // Initialize contract with owner
-    init() {
-        // Initialize ownership
-        self.owner = sender();
-    }
-
-    // ========================================================================
-    // CORE PAYMENT HANDLERS
-    // ========================================================================
-
+// It uses contract parameters to init the contract 
+// https://docs.tact-lang.org/book/contracts/#parameters
+// https://docs.tact-lang.org/book/gas-best-practices/#prefer-contract-parameters-to-init-and-contract-fields
+contract TONPaymentHandler(
+    owner: Address,
+    stopped: Bool,
+    totalDeposited: Int as coins,
+    totalWithdrawn: Int as coins,
+    depositCount: Int as uint32,
+    depositsByAddress: map<Address, Int as coins>,
+) with Ownable, Resumable {
     // Handle explicit deposits with purpose
     // Could have been done with "receive(msg: String)" but we use a message for clarity
     receive(msg: Deposit) {
@@ -134,7 +29,7 @@ contract TONPaymentHandler with Ownable, Resumable {
         // Get the TON amount sent with this message
         let depositAmount: Int = context().value;
 
-        require(depositAmount > 0, "Deposit amount must be positive");
+        throwUnless(ERROR_DEPOSIT_AMOUNT_INVALID, depositAmount > 0);
 
         self.totalDeposited += depositAmount;
         self.depositCount += 1;
@@ -164,7 +59,7 @@ contract TONPaymentHandler with Ownable, Resumable {
         // Get the TON amount sent with this message
         let depositAmount: Int = context().value;
 
-        require(depositAmount > 0, "Deposit amount must be positive");
+        throwUnless(ERROR_DEPOSIT_AMOUNT_INVALID, depositAmount > 0);
 
         self.totalDeposited += depositAmount;
         self.depositCount += 1;
@@ -186,23 +81,18 @@ contract TONPaymentHandler with Ownable, Resumable {
         }.toCell());
     }
 
-    // ========================================================================
-    // ADMINISTRATIVE FUNCTIONS (Owner Only)
-    // ========================================================================
-
     // Withdraw funds from contract
     receive(msg: Withdraw) {
         // Security: Only owner can withdraw
         self.requireOwner();
 
         // Validate withdrawal amount
-        require(msg.amount > 0, "Withdrawal amount must be positive");
-
+        throwUnless(ERROR_WITHDRAWAL_AMOUNT_INVALID, msg.amount > 0);
 
         // Safe withdrawal check to keep enough TON for storage rent
-        require(
+        throwUnless(
+            ERROR_INSUFFICIENT_BALANCE,
             msg.amount < myBalance() - context().value - MIN_TON_FOR_STORAGE,
-            "Insufficient balance for withdrawal",
         );
 
         self.totalWithdrawn += msg.amount;
@@ -218,7 +108,7 @@ contract TONPaymentHandler with Ownable, Resumable {
         message(MessageParameters {
             to: msg.destination,
             value: msg.amount,
-            mode: SendRemainingValue | SendIgnoreErrors,
+            mode: SendIgnoreErrors | SendPayFwdFeesSeparately, // To send the exact amount
             bounce: true, // Use bounced messages for error handling
             body: messageBody,
         });
@@ -237,15 +127,11 @@ contract TONPaymentHandler with Ownable, Resumable {
         self.requireOwner();
 
         // Validate new owner address
-        require(msg.newOwner != myAddress(), "Cannot transfer to self");
+        throwUnless(ERROR_CANNOT_TRANSFER_TO_SELF, msg.newOwner != myAddress());
 
         // Transfer ownership
         self.owner = msg.newOwner;
     }
-
-    // ========================================================================
-    // BOUNCED MESSAGE HANDLING
-    // ========================================================================
 
     // Handle bounced messages (when sends fail)
     // Critical for proper error handling on TON
@@ -263,10 +149,6 @@ contract TONPaymentHandler with Ownable, Resumable {
         // but you need to keep the original sender
         emit("Withdrawal failed".asComment());
     }
-
-    // ========================================================================
-    // GETTER FUNCTIONS (READ-ONLY QUERIES)
-    // ========================================================================
 
     // Get current contract balance
     get fun balance(): Int {

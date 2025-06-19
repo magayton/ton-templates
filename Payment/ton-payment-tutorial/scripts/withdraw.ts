@@ -6,11 +6,11 @@ export async function run(provider: NetworkProvider) {
     console.log('💸 Withdrawing from TON Payment Handler...');
     
     // Contract address (replace with your deployed contract address)
-    const contractAddress = Address.parse('kQDhFNocZIru9_IB1h66RmFjy6j7KhFMlX7qsYWiapaQ5ny4');
+    const contractAddress = Address.parse('kQDbo4DqsRdHl4iOsPdAp-egVSi-hUpQN2iGYOaV8hGDLwc5');
     const payment = provider.open(TONPaymentHandler.fromAddress(contractAddress));
 
     // Withdrawal parameters
-    const withdrawAmount = toNano('0.1'); // 0.8 TON
+    const withdrawAmount = toNano('0.12');
     const destinationAddress = Address.parse('0QCxbHUYTYL-iQam3tOEnjZIxS-CJ9sh0C_FM1ucBpIYMG--'); // Your wallet address
     const comment = 'Withdrawal to owner wallet';
 
@@ -24,7 +24,7 @@ export async function run(provider: NetworkProvider) {
         await payment.send(
             provider.sender(),
             { 
-                value: toNano('0.1') // Gas for withdrawal
+                value: toNano('0.05') // Gas for withdrawal
             },
             {
                 $$type: 'Withdraw',
@@ -33,8 +33,9 @@ export async function run(provider: NetworkProvider) {
                 comment: comment
             }
         );
-        } catch (error) {
+    } catch (error) {
         console.error('Withdrawal failed:', error);
+        return;
     }
 
     console.log('Withdrawal sent successfully!');

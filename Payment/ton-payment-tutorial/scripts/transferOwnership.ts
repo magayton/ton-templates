@@ -33,6 +33,7 @@ export async function run(provider: NetworkProvider) {
 
     } catch (error) {
         console.error('Ownership transfer failed:', error);
+        return;
     }
 
      console.log('Ownership transfer sent successfully!');

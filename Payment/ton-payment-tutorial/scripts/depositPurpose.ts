@@ -31,6 +31,7 @@ export async function run(provider: NetworkProvider) {
         );
     } catch (error) {
         console.error('Deposit failed: ', error);
+        return;
     }
 
     console.log('Deposit sent successfully!');        

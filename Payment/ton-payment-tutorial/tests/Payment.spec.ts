@@ -1,5 +1,5 @@
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
-import { toNano, Cell, Address } from '@ton/core';
+import { toNano, Cell, Address, Dictionary } from '@ton/core';
 import { TONPaymentHandler, loadDepositReceived } from '../build/TONPaymentHandler/TONPaymentHandler_TONPaymentHandler';
 import '@ton/test-utils';
 
@@ -23,7 +23,14 @@ describe('TONPaymentHandler', () => {
         nonOwner = await blockchain.treasury('nonOwner');
 
         // Deploy the contract
-        payment = blockchain.openContract(await TONPaymentHandler.fromInit());
+        payment = blockchain.openContract(await TONPaymentHandler.fromInit(
+            deployer.address,
+            false,
+            0n,
+            0n,
+            0n,
+            Dictionary.empty(),
+        ));
 
         const deployResult = await payment.send(
             deployer.getSender(),
