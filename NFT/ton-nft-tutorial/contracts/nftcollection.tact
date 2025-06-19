@@ -27,7 +27,16 @@ contract NftCollection(
 ) {
 
     // Simple deployment receiver
-    receive() { cashback(sender()) }
+    // Could use cashback(sender()) but that would not leave much tokens for the contract
+    receive() { 
+        let value = context().value;
+        message(MessageParameters{
+            to: sender(),
+            value: value - MIN_TON_FOR_STORAGE, // Keep minimum for storage
+            mode: SendIgnoreErrors,
+            bounce: false,
+        });
+    }
 
     // Public mint function (the user mints for himself)
     receive(msg: Mint) {
@@ -39,7 +48,7 @@ contract NftCollection(
         
         emit(MintExecuted{
             minter: sender,
-            itemId: self.nextItemIndex,
+            itemId: self.nextItemIndex - 1, // The item index is incremented after minting
         }.toCell());
     }
 
@@ -69,6 +78,32 @@ contract NftCollection(
         });
         
         self.nextItemIndex += 1;
+    }
+
+    // Burn NFT
+    receive(msg: Burn) {
+        throwUnless(ERROR_NOT_OWNER, sender() == self.ownerAddress);
+        throwUnless(ERROR_INVALID_INDEX, msg.itemIndex < self.nextItemIndex);
+        
+        // Calculate NFT item address
+        let nftAddress: Address = self.get_nft_address_by_index(msg.itemIndex);
+        
+        // Send burn message to NFT item
+        message(MessageParameters{
+            to: nftAddress,
+            value: ton("0.05"), // Gas for burn operation
+            mode: SendPayFwdFeesSeparately,
+            bounce: true, // Bounce true to see the failed transaction and get back TONs sent
+            body: Burn{
+                queryId: msg.queryId,
+                itemIndex: msg.itemIndex
+            }.toCell()
+        });
+        
+        emit(BurnExecuted{
+            burner: sender(),
+            itemId: msg.itemIndex,
+        }.toCell());
     }
 
     // Handle royalty parameter requests
@@ -123,7 +158,7 @@ contract NftCollection(
         return b.toCell();
     }
 
-    get fun get_nft_address_by_index(itemIndex: Int): Address? {
+    get fun get_nft_address_by_index(itemIndex: Int): Address {
         let initCode: StateInit = self.getNftItemInit(itemIndex);
         return contractAddress(initCode);
     }
@@ -168,7 +203,7 @@ contract NftItem
 
         // 1. Initial Transfer when minting
         if (!self.isInitialized) {
-            throwUnless(ERROR_NOT_OWNER, sender() == self.collectionAddress);
+            throwUnless(ERROR_NOT_COLLECTION, sender() == self.collectionAddress);
             self.isInitialized = true;
             self.owner = msg.newOwner;
             self.individualContent = msg.customPayload;
@@ -211,6 +246,20 @@ contract NftItem
         }
     }
 
+    // Handle burn requests 
+    receive(msg: Burn) {
+        throwUnless(ERROR_NOT_COLLECTION, sender() == self.collectionAddress);
+        
+        // Destroy the contract by sending remaining balance and destroying if zero
+        message(MessageParameters{
+            to: self.collectionAddress,
+            value: 0,
+            mode: SendRemainingBalance | SendDestroyIfZero,
+            bounce: false,
+            body: Excesses{queryId: msg.queryId}.toCell() // Not mandatory
+        });
+    }
+
     // Handle get static data requests
     receive(msg: GetStaticData) {
         message(MessageParameters{
@@ -240,7 +289,6 @@ contract NftItem
 
 // Standalone function - extracted outside contracts for better performance
 fun calculateStorageFee(value: Int, currentBalance: Int): Int {
-    let tonBalanceBeforeMsg: Int = currentBalance - value;
-    let storageFee: Int = MIN_TON_FOR_STORAGE - min(tonBalanceBeforeMsg, MIN_TON_FOR_STORAGE);
+    let storageFee: Int = MIN_TON_FOR_STORAGE - min(currentBalance, MIN_TON_FOR_STORAGE);
     return value - (storageFee + GAS_MINT);
 }

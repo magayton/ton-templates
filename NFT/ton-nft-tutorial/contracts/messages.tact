@@ -32,6 +32,11 @@ struct GetNftData {
 
 message(0x89a35a1f) Mint{}
 
+message(0x1f0f3ca5) Burn {
+    queryId: Int as uint64;
+    itemIndex: Int as uint64;
+}
+
 // Core NFT Messages (TEP-62)
 message(0x5fcc3d14) Transfer {
     queryId: Int as uint64;
@@ -77,5 +82,10 @@ message(0xa8cb00ad) ReportRoyaltyParams {
 // Event messages for logging
 message MintExecuted {
     minter: Address;
+    itemId: Int as uint64;
+}
+
+message BurnExecuted {
+    burner: Address;
     itemId: Int as uint64;
 }
