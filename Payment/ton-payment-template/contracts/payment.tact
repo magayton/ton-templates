@@ -5,7 +5,6 @@ import "./messages";
 const MIN_TON_FOR_STORAGE: Int = ton("0.05");
 
 contract Payment(owner: Address, stopped: Bool) with Ownable, Resumable {
-
     receive() {
         self.requireNotStopped();
 
@@ -34,7 +33,7 @@ contract Payment(owner: Address, stopped: Bool) with Ownable, Resumable {
             to: msg.destination,
             value: msg.amount,
             mode: SendIgnoreErrors | SendPayFwdFeesSeparately,
-            bounce: false, 
+            bounce: false,
             body: null,
         });
 
