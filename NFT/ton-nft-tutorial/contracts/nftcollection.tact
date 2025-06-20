@@ -7,7 +7,7 @@
 import "./messages.tact";
 
 // Gas and storage constants
-const MIN_TON_FOR_STORAGE: Int = ton("0.05"); 
+const MIN_TON_FOR_STORAGE: Int = ton("0.05");
 const GAS_MINT: Int = ton("0.02"); // Gas consumption for minting operation
 
 // Deployment using contract parameters (no init() or state variables)
@@ -23,14 +23,13 @@ contract NftCollection(
     nextItemIndex: Int as uint64,
     ownerAddress: Address,
     royaltyParams: RoyaltyParams?,
-    collectionContent: Cell
+    collectionContent: Cell,
 ) {
-
     // Simple deployment receiver
     // Could use cashback(sender()) but that would not leave much tokens for the contract
-    receive() { 
+    receive() {
         let value = context().value;
-        message(MessageParameters{
+        message(MessageParameters {
             to: sender(),
             value: value - MIN_TON_FOR_STORAGE, // Keep minimum for storage
             mode: SendIgnoreErrors,
@@ -43,10 +42,10 @@ contract NftCollection(
         // Take storage fees from the message value
         let msgValue: Int = calculateStorageFee(context().value, myBalance());
         let sender = sender();
-        
+
         self.mint(sender, msgValue);
-        
-        emit(MintExecuted{
+
+        emit(MintExecuted {
             minter: sender,
             itemId: self.nextItemIndex,
         }.toCell());
@@ -62,20 +61,20 @@ contract NftCollection(
         // The more storage you have, the more rent you pay
         // Using deploy message : https://docs.tact-lang.org/ref/core-send/#deploy
         // https://docs.tact-lang.org/book/gas-best-practices/#use-deploy-function-for-on-chain-deployments
-        deploy(DeployParameters{
+        deploy(DeployParameters {
             init: initOf NftItem(
                 myAddress(), // collectionAddress
-                self.nextItemIndex, // itemIndex  
-            ),
+                self.nextItemIndex,
+            ), // itemIndex
             mode: SendIgnoreErrors,
             value: msgValue,
             body: Transfer {
-                    queryId: 0,
-                    newOwner: senderAddr,
-                    responseDestination: self.ownerAddress,
-                    customPayload: self.collectionContent, // Collection content by default, you can pass a Cell? in argument and change here
-                    forwardAmount: 0,
-                    forwardPayload: emptySlice()
+                queryId: 0,
+                newOwner: senderAddr,
+                responseDestination: self.ownerAddress,
+                customPayload: self.collectionContent, // Collection content by default, you can pass a Cell? in argument and change here
+                forwardAmount: 0,
+                forwardPayload: emptySlice(),
             }.toCell(),
         });
     }
@@ -87,24 +86,24 @@ contract NftCollection(
     receive(msg: Burn) {
         throwUnless(ERROR_NOT_OWNER, sender() == self.ownerAddress);
         throwUnless(ERROR_INVALID_INDEX, msg.itemIndex < self.nextItemIndex);
-        
+
         // Calculate NFT item address
         let nftAddress: Address = self.get_nft_address_by_index(msg.itemIndex);
-        
+
         // Send burn message to NFT item
-        message(MessageParameters{
+        message(MessageParameters {
             to: nftAddress,
             value: ton("0.05"), // Gas for burn operation
             mode: SendPayFwdFeesSeparately,
             bounce: true, // Bounce true to see the failed transaction and get back TONs sent
-            body: Burn{
+            body: Burn {
                 queryId: msg.queryId,
                 itemIndex: msg.itemIndex,
-                owner: msg.owner // The NFT owner address
-            }.toCell()
+                owner: msg.owner, // The NFT owner address
+            }.toCell(),
         });
-        
-        emit(BurnExecuted{
+
+        emit(BurnExecuted {
             burner: sender(),
             itemId: msg.itemIndex,
         }.toCell());
@@ -113,41 +112,44 @@ contract NftCollection(
     // Handle royalty parameter requests
     receive(msg: GetRoyaltyParams) {
         if (self.royaltyParams == null) {
-            message(MessageParameters{
+            message(MessageParameters {
                 to: sender(),
                 value: 0,
                 mode: SendRemainingValue,
                 bounce: false,
-                body: ReportRoyaltyParams{
+                body: ReportRoyaltyParams {
                     queryId: msg.queryId,
                     numerator: 0,
                     denominator: 1000,
-                    destination: self.ownerAddress
-                }.toCell()
+                    destination: self.ownerAddress,
+                }.toCell(),
             });
         } else {
             let royalty: RoyaltyParams = self.royaltyParams!!;
-            message(MessageParameters{
+            message(MessageParameters {
                 to: sender(),
                 value: 0,
                 mode: SendRemainingValue,
                 bounce: false,
-                body: ReportRoyaltyParams{
+                body: ReportRoyaltyParams {
                     queryId: msg.queryId,
                     numerator: royalty.numerator,
                     denominator: royalty.denominator,
-                    destination: royalty.destination
-                }.toCell()
+                    destination: royalty.destination,
+                }.toCell(),
             });
         }
     }
 
     // TEP-62 required get methods
     get fun get_collection_data(): CollectionData {
-        return CollectionData{
+        let b: StringBuilder = beginString();
+        let collectionData: String = self.collectionContent.asSlice().asString();
+        b.append(collectionData);
+        return CollectionData {
             nextItemIndex: self.nextItemIndex,
-            collectionContent: self.collectionContent,
-            ownerAddress: self.ownerAddress
+            collectionContent: b.toCell(),
+            ownerAddress: self.ownerAddress,
         };
     }
 
@@ -155,10 +157,10 @@ contract NftCollection(
         let b: StringBuilder = beginString();
         let collectionContentStr: String = self.collectionContent.asSlice().asString();
         let individualContentStr: String = individualContent.asSlice().asString();
-        
+
         b.append(collectionContentStr);
         b.append(individualContentStr);
-        
+
         return b.toCell();
     }
 
@@ -177,29 +179,28 @@ contract NftCollection(
     }
 }
 
-// NFT Item Contract 
-// Can't be deployed with contract parameters because of TRE-62 requirement :  get_nft_address_by_index(int index)
+// NFT Item Contract
+// Can't be deployed with contract parameters because of TEP-62 requirement :  get_nft_address_by_index(int index)
 // If we use contract parameters, we can't use initOf NftItem(collectionAddress, itemIndex, owner, individualContent)
 // Because we probably don't know all the parameters when we want to use the get_nft_address_by_index(int index) method.
 // So here we use contract state variables and init() function
-contract NftItem
-{
+contract NftItem {
     // Contract state variables
-    isInitialized: Bool = false;     // Flag to check if the contract is initialized
+    isInitialized: Bool = false; // Flag to check if the contract is initialized
     collectionAddress: Address; // Address of the NFT collection
-    itemIndex: Int;             // Index of the NFT item in the collection
-    owner: Address?;            // Owner of the NFT item (Address? because we do not want it to be mandatory for initialization)
-    individualContent: Cell?;   // Individual content of the NFT item (Cell? because we do not want it to be mandatory for initialization)
+    itemIndex: Int; // Index of the NFT item in the collection
+    owner: Address?; // Owner of the NFT item (Address? because we do not want it to be mandatory for initialization)
+    individualContent: Cell?; // Individual content of the NFT item (Cell? because we do not want it to be mandatory for initialization)
 
-    init(collection_address: Address, item_index: Int){
+    init(collection_address: Address, item_index: Int) {
         throwUnless(ERROR_NOT_COLLECTION, sender() == collection_address);
         self.collectionAddress = collection_address;
         self.itemIndex = item_index;
     }
 
     // Transfer ownership of the NFT item
-    // It has 2 cases: 
-    // 1. Initial Transfer when minting 
+    // It has 2 cases:
+    // 1. Initial Transfer when minting
     // 2. Transfer when the owner wants to transfer the NFT item to another address
     receive(msg: Transfer) {
         let ctx: Context = context();
@@ -211,83 +212,83 @@ contract NftItem
             self.isInitialized = true;
             self.owner = msg.newOwner;
             self.individualContent = msg.customPayload;
-            message(MessageParameters{
+            message(MessageParameters {
                 to: msg.responseDestination!!,
                 value: msgValue,
                 mode: SendPayFwdFeesSeparately,
                 bounce: false,
-                body: Excesses{queryId: msg.queryId}.toCell()
+                body: Excesses { queryId: msg.queryId }.toCell(),
             });
         }
         // 2. Transfer when the owner wants to transfer the NFT item to another address
         else {
             throwUnless(ERROR_NOT_OWNER, sender() == self.owner);
-            self.owner = msg.newOwner; 
+            self.owner = msg.newOwner;
             if (msg.forwardAmount > 0) {
                 message(MessageParameters {
                     to: msg.newOwner,
                     value: msg.forwardAmount,
-                    mode:  SendPayFwdFeesSeparately, 
+                    mode: SendPayFwdFeesSeparately,
                     bounce: true,
-                    body: OwnershipAssigned{
+                    body: OwnershipAssigned {
                         queryId: msg.queryId,
                         prevOwner: sender(),
-                        forwardPayload: msg.forwardPayload
-                    }.toCell()
-                }); 
+                        forwardPayload: msg.forwardPayload,
+                    }.toCell(),
+                });
             }
 
-            msgValue -= ctx.readForwardFee(); 
-            if (msg.responseDestination != null) { 
-                message(MessageParameters{
+            msgValue -= ctx.readForwardFee();
+            if (msg.responseDestination != null) {
+                message(MessageParameters {
                     to: msg.responseDestination!!,
                     value: msgValue,
                     mode: SendPayFwdFeesSeparately,
                     bounce: false,
-                    body: Excesses{queryId: msg.queryId}.toCell()
+                    body: Excesses { queryId: msg.queryId }.toCell(),
                 });
-            } 
+            }
         }
     }
 
-    // Handle burn requests 
+    // Handle burn requests
     receive(msg: Burn) {
         throwUnless(ERROR_NOT_COLLECTION, sender() == self.collectionAddress);
-        
+
         // Destroy the contract by sending remaining balance to the NFT owner
         // and destroying contract if balance is zero (which will be the case after sending the balance)
-        message(MessageParameters{
+        message(MessageParameters {
             to: msg.owner,
             value: 0,
             mode: SendRemainingBalance | SendDestroyIfZero,
             bounce: false,
-            body: emptyCell()
+            body: emptyCell(),
         });
     }
 
     // Handle get static data requests
     receive(msg: GetStaticData) {
-        message(MessageParameters{
+        message(MessageParameters {
             to: sender(),
             value: 0,
             mode: SendRemainingValue,
             bounce: false,
-            body: ReportStaticData{
+            body: ReportStaticData {
                 queryId: msg.queryId,
                 index: self.itemIndex,
-                collection: self.collectionAddress
-            }.toCell()
+                collection: self.collectionAddress,
+            }.toCell(),
         });
     }
 
     // TEP-62 required get method
     get fun get_nft_data(): GetNftData {
-        return GetNftData{
-            init: self.isInitialized,  
+        return GetNftData {
+            init: self.isInitialized,
             index: self.itemIndex,
             collectionAddress: self.collectionAddress,
             ownerAddress: self.owner,
-            individualContent: self.individualContent
+            individualContent: self.individualContent,
         };
     }
 }

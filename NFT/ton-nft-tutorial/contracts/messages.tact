@@ -1,6 +1,5 @@
 // message.tact - Message and struct definitions for TON NFT contracts
 
-
 // Error codes (256-211 range for gas efficiency)
 const ERROR_NOT_OWNER: Int = 400;
 const ERROR_NOT_COLLECTION: Int = 401;
@@ -30,7 +29,7 @@ struct GetNftData {
     individualContent: Cell?;
 }
 
-message(0x89a35a1f) Mint{}
+message(0x89a35a1f) Mint {}
 
 message(0x1f0f3ca5) Burn {
     queryId: Int as uint64;

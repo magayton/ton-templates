@@ -10,35 +10,32 @@ describe('NFTCollection', () => {
     let user1: SandboxContract<TreasuryContract>;
     let user2: SandboxContract<TreasuryContract>;
     let nFTCollection: SandboxContract<NftCollection>;
-    
+
     // Collection parameters
     const nextItemIndex = 0n;
     const royaltyParams = {
         $$type: 'RoyaltyParams' as const,
         numerator: 50n, // 50 = 5% (bigint required by TypeScript interface)
-        denominator: 1000n, 
-        destination: Address.parse('EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c')
+        denominator: 1000n,
+        destination: Address.parse('EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c'),
     };
 
-    const COLLECTION_NAME = 'My NFT Collection';
-    const COLLECTION_DESCRIPTION = 'A collection of unique NFTs';
-    const COLLECTION_URI = 'https://example.com/collection.png';
-    const collectionContent = beginCell().storeStringTail(COLLECTION_NAME).storeStringRefTail(COLLECTION_DESCRIPTION).storeStringRefTail(COLLECTION_URI).endCell();
+    // https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md#content-representation
+    const OFFCHAIN_PREFIX = 0x01;
+    const collectionContent = beginCell()
+        .storeInt(OFFCHAIN_PREFIX, 8)
+        .storeStringTail('https://example.com/collection.png')
+        .endCell();
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
-        
+
         deployer = await blockchain.treasury('deployer');
         user1 = await blockchain.treasury('user1');
         user2 = await blockchain.treasury('user2');
 
         nFTCollection = blockchain.openContract(
-            await NftCollection.fromInit(
-                nextItemIndex,
-                deployer.address,
-                royaltyParams,
-                collectionContent
-            )
+            await NftCollection.fromInit(nextItemIndex, deployer.address, royaltyParams, collectionContent),
         );
 
         const deployResult = await nFTCollection.send(
@@ -60,7 +57,7 @@ describe('NFTCollection', () => {
     describe('Deployment', () => {
         it('should deploy successfully', async () => {
             const collectionData = await nFTCollection.getGetCollectionData();
-            
+
             expect(collectionData.nextItemIndex).toBe(nextItemIndex);
             expect(collectionData.ownerAddress).toEqualAddress(deployer.address);
             expect(collectionData.collectionContent.equals(collectionContent)).toBe(true);
@@ -68,7 +65,7 @@ describe('NFTCollection', () => {
 
         it('should have correct royalty parameters', async () => {
             const royalty = await nFTCollection.getRoyaltyParams();
-            
+
             expect(royalty?.numerator).toBe(royaltyParams.numerator);
             expect(royalty?.denominator).toBe(royaltyParams.denominator);
             expect(royalty?.destination).toEqualAddress(royaltyParams.destination);
@@ -83,8 +80,8 @@ describe('NFTCollection', () => {
                     value: toNano('0.1'),
                 },
                 {
-                    $$type: 'Mint'
-                }
+                    $$type: 'Mint',
+                },
             );
 
             expect(mintResult.transactions).toHaveTransaction({
@@ -105,8 +102,8 @@ describe('NFTCollection', () => {
                     value: toNano('0.1'),
                 },
                 {
-                    $$type: 'Mint'
-                }
+                    $$type: 'Mint',
+                },
             );
 
             const nftAddress = await nFTCollection.getGetNftAddressByIndex(0n);
@@ -129,18 +126,9 @@ describe('NFTCollection', () => {
         });
 
         it('should handle multiple mints', async () => {
+            await nFTCollection.send(user1.getSender(), { value: toNano('0.1') }, { $$type: 'Mint' });
 
-            await nFTCollection.send(
-                user1.getSender(),
-                { value: toNano('0.1') },
-                { $$type: 'Mint' }
-            );
-
-            await nFTCollection.send(
-                user2.getSender(),
-                { value: toNano('0.1') },
-                { $$type: 'Mint' }
-            );
+            await nFTCollection.send(user2.getSender(), { value: toNano('0.1') }, { $$type: 'Mint' });
 
             const collectionData = await nFTCollection.getGetCollectionData();
             expect(collectionData.nextItemIndex).toBe(2n);
@@ -153,8 +141,8 @@ describe('NFTCollection', () => {
                     value: toNano('0.01'), // Too low
                 },
                 {
-                    $$type: 'Mint'
-                }
+                    $$type: 'Mint',
+                },
             );
 
             expect(mintResult.transactions).toHaveTransaction({
@@ -174,8 +162,8 @@ describe('NFTCollection', () => {
                 },
                 {
                     $$type: 'GetRoyaltyParams',
-                    queryId: 12345n
-                }
+                    queryId: 12345n,
+                },
             );
 
             expect(result.transactions).toHaveTransaction({
@@ -197,7 +185,7 @@ describe('NFTCollection', () => {
     describe('Getter Methods', () => {
         it('should return correct collection data', async () => {
             const data = await nFTCollection.getGetCollectionData();
-            
+
             expect(data.nextItemIndex).toBe(0n);
             expect(data.ownerAddress).toEqualAddress(deployer.address);
             expect(data.collectionContent.equals(collectionContent)).toBe(true);
@@ -206,14 +194,14 @@ describe('NFTCollection', () => {
         it('should generate NFT content correctly', async () => {
             const individualContent = beginCell().storeStringTail('individual.json').endCell();
             const content = await nFTCollection.getGetNftContent(0n, individualContent);
-            
+
             expect(content).toBeDefined();
         });
 
         it('should calculate NFT address by index', async () => {
             const address = await nFTCollection.getGetNftAddressByIndex(0n);
             expect(address).toBeDefined();
-            
+
             // Different indices should give different addresses
             const address2 = await nFTCollection.getGetNftAddressByIndex(1n);
             expect(address?.toString()).not.toBe(address2?.toString());
@@ -229,11 +217,7 @@ describe('NFTCollection', () => {
 
     describe('NFT Item Integration', () => {
         it('should create functional NFT items', async () => {
-            await nFTCollection.send(
-                user1.getSender(),
-                { value: toNano('0.1') },
-                { $$type: 'Mint' }
-            );
+            await nFTCollection.send(user1.getSender(), { value: toNano('0.1') }, { $$type: 'Mint' });
 
             const nftAddress = await nFTCollection.getGetNftAddressByIndex(0n);
             const nftItem = blockchain.openContract(NftItem.fromAddress(nftAddress!));
@@ -249,11 +233,7 @@ describe('NFTCollection', () => {
 
     describe('NFT Transfer', () => {
         beforeEach(async () => {
-            await nFTCollection.send(
-                user1.getSender(),
-                { value: toNano('0.1') },
-                { $$type: 'Mint' }
-            );
+            await nFTCollection.send(user1.getSender(), { value: toNano('0.1') }, { $$type: 'Mint' });
         });
 
         it('should transfer NFT to new owner', async () => {
@@ -273,8 +253,8 @@ describe('NFTCollection', () => {
                     responseDestination: user1.address,
                     customPayload: null,
                     forwardAmount: 0n,
-                    forwardPayload: beginCell().endCell().asSlice()
-                }
+                    forwardPayload: beginCell().endCell().asSlice(),
+                },
             );
 
             expect(transferResult.transactions).toHaveTransaction({
@@ -305,8 +285,8 @@ describe('NFTCollection', () => {
                     responseDestination: user2.address,
                     customPayload: null,
                     forwardAmount: 0n,
-                    forwardPayload: beginCell().endCell().asSlice()
-                }
+                    forwardPayload: beginCell().endCell().asSlice(),
+                },
             );
 
             expect(transferResult.transactions).toHaveTransaction({
@@ -319,11 +299,7 @@ describe('NFTCollection', () => {
 
     describe('NFT Burning', () => {
         beforeEach(async () => {
-            await nFTCollection.send(
-                user1.getSender(),
-                { value: toNano('0.1') },
-                { $$type: 'Mint' }
-            );
+            await nFTCollection.send(user1.getSender(), { value: toNano('0.1') }, { $$type: 'Mint' });
         });
 
         it('should burn NFT successfully', async () => {
@@ -340,7 +316,7 @@ describe('NFTCollection', () => {
                     queryId: 123n,
                     itemIndex: 0n,
                     owner: user1.address,
-                }
+                },
             );
 
             expect(burnResult.transactions).toHaveTransaction({
@@ -375,7 +351,7 @@ describe('NFTCollection', () => {
                     queryId: 123n,
                     itemIndex: 0n,
                     owner: user1.address,
-                }
+                },
             );
 
             expect(burnResult.transactions).toHaveTransaction({
@@ -396,7 +372,7 @@ describe('NFTCollection', () => {
                     queryId: 123n,
                     itemIndex: 999n, // Non-existent index
                     owner: user1.address,
-                }
+                },
             );
 
             expect(burnResult.transactions).toHaveTransaction({
@@ -411,11 +387,7 @@ describe('NFTCollection', () => {
         it('should handle plain TON transfers', async () => {
             let user1BalanceBefore = await user1.getBalance();
 
-            const result = await nFTCollection.send(
-                user1.getSender(),
-                { value: toNano('0.1') },
-                null
-            );
+            const result = await nFTCollection.send(user1.getSender(), { value: toNano('0.1') }, null);
 
             expect(result.transactions).toHaveTransaction({
                 from: user1.address,

@@ -5,10 +5,12 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider) {
     console.log('Deploying NFT Collection contract ...');
 
-    const COLLECTION_NAME = 'My NFT Collection';
-    const COLLECTION_DESCRIPTION = 'A collection of unique NFTs';
-    const COLLECTION_URI = 'https://example.com/collection.png';
-    const collectionContent = beginCell().storeStringTail(COLLECTION_NAME).storeStringRefTail(COLLECTION_DESCRIPTION).storeStringRefTail(COLLECTION_URI).endCell();
+    // TO CHANGE WITH YOUR OWN VALUES
+    const OFFCHAIN_PREFIX = 0x01;
+    const collectionContent = beginCell()
+        .storeInt(OFFCHAIN_PREFIX, 8)
+        .storeStringTail('https://example.com/collection.png')
+        .endCell();
 
     const nFTCollection = provider.open(await NftCollection.fromInit(
         0n, // nextItemIndex
