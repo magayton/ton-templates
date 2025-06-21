@@ -46,7 +46,7 @@ contract SoulboundCollection(
             // Use ItemInit instead of Transfer for classic NFT
             body: ItemInit {
                     newOwner: msg.to,
-                    content: msg.collectionContent,
+                    content: msg.itemContent,
                     authorityAddress: self.ownerAddress,
             }.toCell(),
         });
@@ -112,7 +112,7 @@ contract SBTItem {
 
     // Message called to init the other state variables (to keep the get_nft_address_by_index(int index) method working)
     receive(msg: ItemInit) {
-        throwUnless(ERROR_ALREADY_INITIALIZED, !self.isInitialized);
+        throwUnless(ERROR_ALREADY_INITIALIZED, self.isInitialized);
         throwUnless(ERROR_NOT_COLLECTION, sender() == self.collectionAddress);
         
         self.owner = msg.newOwner;
@@ -128,7 +128,7 @@ contract SBTItem {
     // Allows SBT holder to prove ownership to other contracts
     receive(msg: ProveOwnership) {
         throwUnless(ERROR_NOT_SBT_OWNER, sender() == self.owner);
-        throwUnless(ERROR_SBT_REVOKED, self.revokedAt > 0);
+        throwUnless(ERROR_SBT_REVOKED, self.revokedAt == 0);
 
         // Send ownership proof to destination
         message(MessageParameters {
@@ -169,7 +169,7 @@ contract SBTItem {
     // Handle direct revoke message (only collection owner can revoke acting like a certificate authority)
     receive(msg: Revoke) {
         throwUnless(ERROR_NOT_COLLECTION_OWNER, sender() == self.authorityAddress);
-        throwUnless(ERROR_ALREADY_REVOKED, self.revokedAt > 0);
+        throwUnless(ERROR_ALREADY_REVOKED, self.revokedAt == 0);
         
         // Set revoked_at to current time
         self.revokedAt = now();
@@ -177,7 +177,7 @@ contract SBTItem {
 
     // Allows third parties to request ownership info
     receive(msg: RequestOwner) {
-        throwUnless(ERROR_SBT_REVOKED, self.revokedAt > 0);
+        throwUnless(ERROR_SBT_REVOKED, self.revokedAt == 0);
         
         // Send owner info to destination
         message(MessageParameters {

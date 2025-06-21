@@ -28,7 +28,7 @@ message OwnershipAssigned {
 message Mint {
     queryId: Int as uint64;
     to: Address;
-    collectionContent: Cell;
+    itemContent: Cell;
 }
 
 // Initialization message (sent by collection during deployment)
