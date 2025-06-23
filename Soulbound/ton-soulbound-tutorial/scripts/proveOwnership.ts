@@ -23,8 +23,11 @@ export async function run(provider: NetworkProvider) {
     // ProveOwnership parameters
     const queryId = 0n;
     const destinationAddress = Address.parse("DESTINATION_ADDRESS_HERE"); // Replace with destination address
-    const forwardPayload = beginCell().storeStringTail("Ownership proof payload").endCell(); // Replace with actual payload
     const withContent = true;
+    
+    // Forward payload format
+    // https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md#forward_payload-format
+    const forwardPayload = beginCell().storeStringTail("Ownership proof payload").endCell(); // Replace with actual payload
 
     try {
         await sbtItem.send(

@@ -23,8 +23,11 @@ export async function run(provider: NetworkProvider) {
     // RequestOwner parameters
     const queryId = 0n;
     const destinationAddress = Address.parse("DESTINATION_ADDRESS_HERE"); // Replace with destination address
-    const forwardPayload = beginCell().storeStringTail("Owner request payload").endCell(); // Replace with actual payload
     const withContent = true;
+
+    // Forward payload format
+    // https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md#forward_payload-format
+    const forwardPayload = beginCell().storeStringTail("Owner request payload").endCell(); // Replace with actual payload
 
     try {
         await sbtItem.send(
@@ -36,7 +39,7 @@ export async function run(provider: NetworkProvider) {
                 $$type: 'RequestOwner',
                 queryId: queryId,
                 dest: destinationAddress,
-                forwardPayload: forwardPayload,
+                forwardPayload: forwardPayload, 
                 withContent: withContent,
             }
         );
