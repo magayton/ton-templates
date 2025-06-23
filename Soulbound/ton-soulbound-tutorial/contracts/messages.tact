@@ -9,7 +9,7 @@ const ERROR_ALREADY_REVOKED: Int = 406;
 const ERROR_ALREADY_INITIALIZED: Int = 407;
 
 // Standard TEP62 messages
-message Transfer {
+message(0xbc53485c) Transfer {
     queryId: Int as uint64;
     newOwner: Address;
     responseDestination: Address;
@@ -18,21 +18,21 @@ message Transfer {
     forwardPayload: Slice as remaining;
 }
 
-message OwnershipAssigned {
+message(0x1e113f63) OwnershipAssigned {
     queryId: Int as uint64;
     prevOwner: Address;
     forwardPayload: Slice as remaining;
 }
 
 // SBT-specific messages
-message Mint {
+message(0x40100de) Mint {
     queryId: Int as uint64;
     to: Address;
     itemContent: Cell;
 }
 
 // Initialization message (sent by collection during deployment)
-message ItemInit {
+message(0x92eb66e7) ItemInit {
     newOwner: Address;
     content: Cell;
     authorityAddress: Address;
@@ -42,14 +42,14 @@ message(0x6f89f5e3) Revoke {
     queryId: Int as uint64;
 }
 
-message ProveOwnership {
+message(0x1c90965) ProveOwnership {
     queryId: Int as uint64;
     dest: Address;
     forwardPayload: Cell;
     withContent: Bool;
 }
 
-message OwnershipProof {
+message(0x2e11cB2f) OwnershipProof {
     queryId: Int as uint64;
     itemId: Int as uint256;
     owner: Address?;
@@ -58,11 +58,11 @@ message OwnershipProof {
     content: Cell?;
 }
 
-message OwnershipProofBounced {
+message(0xb545563f) OwnershipProofBounced {
     queryId: Int as uint64;
 }
 
-message Destroy {
+message(0xe94c1bb5) Destroy {
     queryId: Int as uint64;
 }
 
