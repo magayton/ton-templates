@@ -20,21 +20,10 @@ contract NftCollection(
     }
 
     receive(msg: Mint) {
+        throwUnless(ERROR_INVALID_INDEX, self.nextItemIndex >= 0);
+
         let msgValue: Int = calculateStorageFee(context().value, myBalance());
         let sender = sender();
-
-        self.mint(sender, msgValue);
-
-        emit(MintExecuted {
-            minter: sender,
-            itemId: self.nextItemIndex,
-        }.toCell());
-
-        self.nextItemIndex += 1;
-    }
-
-    inline fun mint(senderAddr: Address, msgValue: Int) {
-        throwUnless(ERROR_INVALID_INDEX, self.nextItemIndex >= 0);
 
         deploy(DeployParameters {
             init: initOf NftItem(
@@ -44,14 +33,21 @@ contract NftCollection(
             mode: SendIgnoreErrors,
             value: msgValue,
             body: Transfer {
-                queryId: 0,
-                newOwner: senderAddr,
+                queryId: msg.queryId,
+                newOwner: sender,
                 responseDestination: self.ownerAddress,
-                customPayload: self.collectionContent,
+                customPayload: msg.itemContent,
                 forwardAmount: 0,
                 forwardPayload: emptySlice(),
             }.toCell(),
         });
+
+        emit(MintExecuted {
+            minter: sender,
+            itemId: self.nextItemIndex,
+        }.toCell());
+
+        self.nextItemIndex += 1;
     }
 
     receive(msg: Burn) {

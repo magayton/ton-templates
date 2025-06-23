@@ -1,4 +1,4 @@
-import { toNano, Address } from '@ton/core';
+import { toNano, Address, beginCell } from '@ton/core';
 import { NftCollection } from '../build/NftCollection/NftCollection_NftCollection';
 import { NetworkProvider } from '@ton/blueprint';
 
@@ -12,6 +12,9 @@ export async function run(provider: NetworkProvider) {
 
     console.log('Collection address:', nFTCollection.address.toString());
 
+     const queryId = 0n;
+    const itemContent = beginCell().storeStringTail("item.content").endCell(); // Replace with actual item content
+
     try {
         await nFTCollection.send(
             provider.sender(),
@@ -20,6 +23,8 @@ export async function run(provider: NetworkProvider) {
             },
             {
                 $$type: 'Mint',
+                queryId: queryId,
+                itemContent: itemContent
             }
         );
 

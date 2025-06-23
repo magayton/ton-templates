@@ -38,29 +38,18 @@ contract NftCollection(
     }
 
     // Public mint function (the user mints for himself)
+    // Each NFT item is a separate contract, so we deploy it with its own init code.
+    // It is a separate contract to avoid infinite growth of the collection contract with a Map<User->NFT>
+    // The more storage you have, the more rent you pay
+    // Using deploy message : https://docs.tact-lang.org/ref/core-send/#deploy
+    // https://docs.tact-lang.org/book/gas-best-practices/#use-deploy-function-for-on-chain-deployments
+
     receive(msg: Mint) {
+        throwUnless(ERROR_INVALID_INDEX, self.nextItemIndex >= 0);
         // Take storage fees from the message value
         let msgValue: Int = calculateStorageFee(context().value, myBalance());
         let sender = sender();
 
-        self.mint(sender, msgValue);
-
-        emit(MintExecuted {
-            minter: sender,
-            itemId: self.nextItemIndex,
-        }.toCell());
-
-        self.nextItemIndex += 1;
-    }
-
-    inline fun mint(senderAddr: Address, msgValue: Int) {
-        throwUnless(ERROR_INVALID_INDEX, self.nextItemIndex >= 0);
-
-        // Each NFT item is a separate contract, so we deploy it with its own init code.
-        // It is a separate contract to avoid infinite growth of the collection contract with a Map<User->NFT>
-        // The more storage you have, the more rent you pay
-        // Using deploy message : https://docs.tact-lang.org/ref/core-send/#deploy
-        // https://docs.tact-lang.org/book/gas-best-practices/#use-deploy-function-for-on-chain-deployments
         deploy(DeployParameters {
             init: initOf NftItem(
                 myAddress(), // collectionAddress
@@ -69,14 +58,21 @@ contract NftCollection(
             mode: SendIgnoreErrors,
             value: msgValue,
             body: Transfer {
-                queryId: 0,
-                newOwner: senderAddr,
+                queryId: msg.queryId,
+                newOwner: sender,
                 responseDestination: self.ownerAddress,
-                customPayload: self.collectionContent, // Collection content by default, you can pass a Cell? in argument and change here
+                customPayload: msg.itemContent,
                 forwardAmount: 0,
                 forwardPayload: emptySlice(),
             }.toCell(),
         });
+
+        emit(MintExecuted {
+            minter: sender,
+            itemId: self.nextItemIndex,
+        }.toCell());
+
+        self.nextItemIndex += 1;
     }
 
     // Burn NFT
