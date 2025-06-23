@@ -63,7 +63,7 @@ contract NftCollection(
                 responseDestination: self.ownerAddress,
                 customPayload: msg.itemContent,
                 forwardAmount: 0,
-                forwardPayload: emptySlice(),
+                forwardPayload: emptySlice(), // https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md#forward_payload-format
             }.toCell(),
         });
 
@@ -229,7 +229,7 @@ contract NftItem {
                     body: OwnershipAssigned {
                         queryId: msg.queryId,
                         prevOwner: sender(),
-                        forwardPayload: msg.forwardPayload,
+                        forwardPayload: msg.forwardPayload, // https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md#forward_payload-format
                     }.toCell(),
                 });
             }

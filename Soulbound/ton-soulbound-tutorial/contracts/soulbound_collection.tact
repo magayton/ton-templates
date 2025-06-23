@@ -140,7 +140,7 @@ contract SBTItem {
                 queryId: msg.queryId,
                 itemId: self.itemIndex,
                 owner: self.owner,
-                data: msg.forwardPayload,
+                data: msg.forwardPayload, // https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md#forward_payload-format
                 revokedAt: self.revokedAt,
                 content: msg.withContent ? self.individualContent : null,
             }.toCell(),
@@ -190,7 +190,7 @@ contract SBTItem {
                 itemId: self.itemIndex,
                 initiator: sender(),
                 owner: self.owner!!,
-                data: msg.forwardPayload,
+                data: msg.forwardPayload, // https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md#forward_payload-format
                 revokedAt: self.revokedAt,
                 content: msg.withContent ? self.individualContent : null,
             }.toCell(),

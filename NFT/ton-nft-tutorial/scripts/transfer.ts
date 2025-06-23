@@ -29,7 +29,7 @@ export async function run(provider: NetworkProvider) {
                 responseDestination: provider.sender().address!,
                 customPayload: null,
                 forwardAmount: toNano('0.01'),
-                forwardPayload: beginCell().endCell().asSlice()
+                forwardPayload: beginCell().endCell().asSlice() // https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md#forward_payload-format
             },
         );
 
