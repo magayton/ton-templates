@@ -1,19 +1,36 @@
-import { toNano } from '@ton/core';
+import { toNano, beginCell } from '@ton/core';
 import { SoulboundCollection } from '../build/SoulboundCollection/SoulboundCollection_SoulboundCollection';
 import { NetworkProvider } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider) {
-    const soulboundCollection = provider.open(await SoulboundCollection.fromInit());
+    const nextItemIndex = 0n;
+    const ownerAddress = provider.sender().address!;
+    // https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md#content-representation
+    const OFFCHAIN_PREFIX = 0x01;
+    const collectionContent = beginCell()
+        .storeInt(OFFCHAIN_PREFIX, 8)
+        .storeStringTail('https://example.com/collection/')
+        .endCell();
 
-    await soulboundCollection.send(
-        provider.sender(),
-        {
-            value: toNano('0.05'),
-        },
-        null,
+    const soulboundCollection = provider.open(
+        await SoulboundCollection.fromInit(nextItemIndex, ownerAddress, collectionContent)
     );
 
-    await provider.waitForDeploy(soulboundCollection.address);
+    try {
+        await soulboundCollection.send(
+            provider.sender(),
+            {
+                value: toNano('0.1'),
+            },
+            null,
+        );
 
-    // run methods on `soulboundCollection`
+        await provider.waitForDeploy(soulboundCollection.address);
+    } 
+    catch (error) {
+        console.error('Error deploying Soulbound Collection:', error);
+        return;
+    }
+
+    console.log('Soulbound Collection contract deployed!');
 }
