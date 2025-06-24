@@ -10,7 +10,7 @@ describe('SoulboundCollection', () => {
     let user1: SandboxContract<TreasuryContract>;
     let user2: SandboxContract<TreasuryContract>;
     let soulboundCollection: SandboxContract<SoulboundCollection>;
-    
+
     // https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md#content-representation
     const OFFCHAIN_PREFIX = 0x01;
     const COLLECTION_CONTENT = beginCell()
@@ -21,7 +21,7 @@ describe('SoulboundCollection', () => {
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
-        
+
         deployer = await blockchain.treasury('deployer');
         user1 = await blockchain.treasury('user1');
         user2 = await blockchain.treasury('user2');
@@ -53,7 +53,7 @@ describe('SoulboundCollection', () => {
     describe('Deployment', () => {
         it('should return correct collection data after deployment', async () => {
             const collectionData = await soulboundCollection.getGetCollectionData();
-            
+
             expect(collectionData.nextItemIndex).toBe(0n);
             expect(collectionData.ownerAddress.toString()).toBe(deployer.address.toString());
             expect(collectionData.collectionContent.equals(COLLECTION_CONTENT)).toBe(true);
@@ -176,14 +176,14 @@ describe('SoulboundCollection', () => {
 
         it('should return correct NFT content', async () => {
             const content = await soulboundCollection.getGetNftContent(0n, ITEM_CONTENT);
-            
+
             // The contract uses StringBuilder to concatenate strings from both cells
             // So we need to create the expected content by concatenating the string representations
             const expectedContent = beginCell()
                 .storeUint(OFFCHAIN_PREFIX, 8)
                 .storeStringTail('https://example.com/collection/item-test')
                 .endCell();
-            
+
             // Compare the cells directly
             expect(content.toString()).toBe(expectedContent.toString());
         });
@@ -211,7 +211,7 @@ describe('SoulboundCollection', () => {
 
         it('should return correct NFT data', async () => {
             const nftData = await sbtItem.getGetNftData();
-            
+
             expect(nftData.isInitialized).toBe(true);
             expect(nftData.index).toBe(0n);
             expect(nftData.collectionAddress.toString()).toBe(soulboundCollection.address.toString());

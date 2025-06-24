@@ -6,7 +6,7 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider) {
     // Replace with your collection address
     const collectionAddress = Address.parse("COLLECTION_ADDRESS_HERE");
-    
+
     const soulboundCollection = provider.open(
         SoulboundCollection.fromAddress(collectionAddress)
     );
@@ -14,7 +14,7 @@ export async function run(provider: NetworkProvider) {
     // Get the SBT item address (replace itemIndex with the actual index)
     const itemIndex = 0n;
     const sbtItemAddress = await soulboundCollection.getGetNftAddressByIndex(itemIndex);
-    
+
     console.log('SBT Item address:', sbtItemAddress);
 
     // Create connection to the SBT item
@@ -24,7 +24,7 @@ export async function run(provider: NetworkProvider) {
     const queryId = 0n;
     const destinationAddress = Address.parse("DESTINATION_ADDRESS_HERE"); // Replace with destination address
     const withContent = true;
-    
+
     // Forward payload format
     // https://github.com/ton-blockchain/TEPs/blob/master/text/0062-nft-standard.md#forward_payload-format
     const forwardPayload = beginCell().storeStringTail("Ownership proof payload").endCell(); // Replace with actual payload

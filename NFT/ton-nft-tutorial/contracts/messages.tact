@@ -29,7 +29,7 @@ struct GetNftData {
     individualContent: Cell?;
 }
 
-message(0x6d560697) Mint{
+message(0x6d560697) Mint {
     queryId: Int as uint64;
     itemContent: Cell;
 }

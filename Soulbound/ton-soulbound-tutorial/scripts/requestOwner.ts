@@ -6,7 +6,7 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider) {
     // Replace with your collection address
     const collectionAddress = Address.parse("COLLECTION_ADDRESS_HERE");
-    
+
     const soulboundCollection = provider.open(
         SoulboundCollection.fromAddress(collectionAddress)
     );
@@ -14,7 +14,7 @@ export async function run(provider: NetworkProvider) {
     // Get the SBT item address (replace itemIndex with the actual index)
     const itemIndex = 0n;
     const sbtItemAddress = await soulboundCollection.getGetNftAddressByIndex(itemIndex);
-    
+
     console.log('SBT Item address:', sbtItemAddress);
 
     // Create connection to the SBT item
@@ -39,7 +39,7 @@ export async function run(provider: NetworkProvider) {
                 $$type: 'RequestOwner',
                 queryId: queryId,
                 dest: destinationAddress,
-                forwardPayload: forwardPayload, 
+                forwardPayload: forwardPayload,
                 withContent: withContent,
             }
         );

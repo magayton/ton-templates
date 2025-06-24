@@ -7,10 +7,10 @@ export async function run(provider: NetworkProvider) {
 
     // Replace with your NFT item address (not collection address)
     const nftItemAddress = Address.parse('YOUR_NFT_ITEM_ADDRESS_HERE');
-    
+
     // Replace with the new owner address
     const newOwnerAddress = Address.parse('NEW_OWNER_ADDRESS_HERE');
-    
+
     const nftItem = provider.open(NftItem.fromAddress(nftItemAddress));
 
     console.log('NFT Item address:', nftItem.address.toString());

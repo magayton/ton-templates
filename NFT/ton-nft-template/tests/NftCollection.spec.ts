@@ -132,16 +132,16 @@ describe('NFTCollection', () => {
 
         it('should handle multiple mints', async () => {
             await nFTCollection.send(user1.getSender(), { value: toNano('0.1') }, {
-                    $$type: 'Mint',
-                    queryId: 1n,
-                    itemContent: itemContent
-                },);
+                $$type: 'Mint',
+                queryId: 1n,
+                itemContent: itemContent
+            },);
 
             await nFTCollection.send(user2.getSender(), { value: toNano('0.1') }, {
-                    $$type: 'Mint',
-                    queryId: 2n,
-                    itemContent: itemContent
-                },);
+                $$type: 'Mint',
+                queryId: 2n,
+                itemContent: itemContent
+            },);
 
             const collectionData = await nFTCollection.getGetCollectionData();
             expect(collectionData.nextItemIndex).toBe(2n);
@@ -233,10 +233,10 @@ describe('NFTCollection', () => {
     describe('NFT Item Integration', () => {
         it('should create functional NFT items', async () => {
             await nFTCollection.send(user1.getSender(), { value: toNano('0.1') }, {
-                    $$type: 'Mint',
-                    queryId: 1n,
-                    itemContent: itemContent
-                },);
+                $$type: 'Mint',
+                queryId: 1n,
+                itemContent: itemContent
+            },);
 
             const nftAddress = await nFTCollection.getGetNftAddressByIndex(0n);
             const nftItem = blockchain.openContract(NftItem.fromAddress(nftAddress!));
@@ -253,10 +253,10 @@ describe('NFTCollection', () => {
     describe('NFT Transfer', () => {
         beforeEach(async () => {
             await nFTCollection.send(user1.getSender(), { value: toNano('0.1') }, {
-                    $$type: 'Mint',
-                    queryId: 1n,
-                    itemContent: itemContent
-                },);
+                $$type: 'Mint',
+                queryId: 1n,
+                itemContent: itemContent
+            },);
         });
 
         it('should transfer NFT to new owner', async () => {
@@ -323,10 +323,10 @@ describe('NFTCollection', () => {
     describe('NFT Burning', () => {
         beforeEach(async () => {
             await nFTCollection.send(user1.getSender(), { value: toNano('0.1') }, {
-                    $$type: 'Mint',
-                    queryId: 1n,
-                    itemContent: itemContent
-                },);
+                $$type: 'Mint',
+                queryId: 1n,
+                itemContent: itemContent
+            },);
         });
 
         it('should burn NFT successfully', async () => {

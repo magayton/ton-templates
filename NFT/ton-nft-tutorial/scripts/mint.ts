@@ -7,7 +7,7 @@ export async function run(provider: NetworkProvider) {
 
     // Replace with your deployed collection address
     const collectionAddress = Address.parse('YOUR_COLLECTION_ADDRESS_HERE');
-    
+
     const nFTCollection = provider.open(NftCollection.fromAddress(collectionAddress));
 
     console.log('Collection address:', nFTCollection.address.toString());

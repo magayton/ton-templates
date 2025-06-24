@@ -26,7 +26,7 @@ export async function run(provider: NetworkProvider) {
         );
 
         await provider.waitForDeploy(soulboundCollection.address);
-    } 
+    }
     catch (error) {
         console.error('Error deploying Soulbound Collection:', error);
         return;

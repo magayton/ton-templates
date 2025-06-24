@@ -10,10 +10,10 @@ export async function run(provider: NetworkProvider) {
 
     // Replace with the owner address of the NFT you want to burn
     const ownerAddress = Address.parse('YOUR_OWNER_ADDRESS_HERE');
-    
+
     // Replace with the item index you want to burn
     const itemIndex = 0n;
-    
+
     const nFTCollection = provider.open(NftCollection.fromAddress(collectionAddress));
 
     console.log('Collection address:', nFTCollection.address.toString());
@@ -23,7 +23,7 @@ export async function run(provider: NetworkProvider) {
         await nFTCollection.send(
             provider.sender(),
             {
-                value: toNano('0.1'), 
+                value: toNano('0.1'),
             },
             {
                 $$type: 'Burn',

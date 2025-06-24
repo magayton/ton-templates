@@ -5,8 +5,8 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider) {
     console.log('Transferring ownership of Payment contract ...');
 
-   const contractAddress = Address.parse('CONTRACT_ADDRESS_HERE');
-   const payment = provider.open(Payment.fromAddress(contractAddress));
+    const contractAddress = Address.parse('CONTRACT_ADDRESS_HERE');
+    const payment = provider.open(Payment.fromAddress(contractAddress));
 
 
     const isDeployed = await provider.isContractDeployed(payment.address);

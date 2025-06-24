@@ -1,16 +1,15 @@
 import "./messages.tact";
 
-const MIN_TON_FOR_STORAGE: Int = ton("0.05"); 
+const MIN_TON_FOR_STORAGE: Int = ton("0.05");
 
 contract SoulboundCollection(
     nextItemIndex: Int as uint32,
     ownerAddress: Address,
     collectionContent: Cell,
 ) {
-
-    receive() { 
+    receive() {
         let value = context().value;
-        message(MessageParameters{
+        message(MessageParameters {
             to: sender(),
             value: value - MIN_TON_FOR_STORAGE,
             mode: SendIgnoreErrors,
@@ -21,17 +20,17 @@ contract SoulboundCollection(
     receive(msg: Mint) {
         throwUnless(ERROR_NOT_COLLECTION_OWNER, sender() == self.ownerAddress);
 
-        deploy(DeployParameters{
+        deploy(DeployParameters {
             init: initOf SBTItem(
-                myAddress(), 
+                myAddress(),
                 self.nextItemIndex,
             ),
             mode: SendIgnoreErrors,
             value: context().value,
             body: ItemInit {
-                    newOwner: msg.to,
-                    content: msg.itemContent,
-                    authorityAddress: self.ownerAddress,
+                newOwner: msg.to,
+                content: msg.itemContent,
+                authorityAddress: self.ownerAddress,
             }.toCell(),
         });
 
@@ -47,14 +46,14 @@ contract SoulboundCollection(
         return initOf SBTItem(myAddress(), itemIndex);
     }
 
-    get fun get_collection_data(): CollectionData {     
+    get fun get_collection_data(): CollectionData {
         let b: StringBuilder = beginString();
         let collectionData: String = self.collectionContent.asSlice().asString();
         b.append(collectionData);
-        return CollectionData{
-            nextItemIndex: self.nextItemIndex, 
-            collectionContent: b.toCell(), 
-            ownerAddress: self.ownerAddress
+        return CollectionData {
+            nextItemIndex: self.nextItemIndex,
+            collectionContent: b.toCell(),
+            ownerAddress: self.ownerAddress,
         };
     }
 
@@ -62,16 +61,15 @@ contract SoulboundCollection(
         let b: StringBuilder = beginString();
         let collectionContentStr: String = self.collectionContent.asSlice().asString();
         let individualContentStr: String = individual_content.asSlice().asString();
-        
+
         b.append(collectionContentStr);
         b.append(individualContentStr);
-        
+
         return b.toCell();
     }
 }
 
 contract SBTItem {
-
     isInitialized: Bool = false;
     collectionAddress: Address;
     itemIndex: Int;
@@ -80,7 +78,7 @@ contract SBTItem {
     authorityAddress: Address?;
     revokedAt: Int as uint64 = 0;
 
-   init(collection_address: Address, item_index: Int){
+    init(collection_address: Address, item_index: Int) {
         throwUnless(ERROR_NOT_COLLECTION, sender() == collection_address);
         self.collectionAddress = collection_address;
         self.itemIndex = item_index;
@@ -90,7 +88,7 @@ contract SBTItem {
     receive(msg: ItemInit) {
         throwUnless(ERROR_ALREADY_INITIALIZED, self.isInitialized);
         throwUnless(ERROR_NOT_COLLECTION, sender() == self.collectionAddress);
-        
+
         self.owner = msg.newOwner;
         self.individualContent = msg.content;
         self.authorityAddress = msg.authorityAddress;
@@ -123,28 +121,28 @@ contract SBTItem {
     receive(msg: Destroy) {
         throwUnless(ERROR_NOT_INITIALIZED, self.isInitialized);
         throwUnless(ERROR_NOT_SBT_OWNER, sender() == self.owner);
-        
-        message(MessageParameters{
+
+        message(MessageParameters {
             to: sender(),
             value: 0,
             mode: SendRemainingBalance | SendDestroyIfZero,
             bounce: false,
-            body: Excesses{
-                queryId: msg.queryId
-            }.toCell()
+            body: Excesses {
+                queryId: msg.queryId,
+            }.toCell(),
         });
     }
 
     receive(msg: Revoke) {
         throwUnless(ERROR_NOT_COLLECTION_OWNER, sender() == self.authorityAddress);
         throwUnless(ERROR_ALREADY_REVOKED, self.revokedAt == 0);
-        
+
         self.revokedAt = now();
     }
 
     receive(msg: RequestOwner) {
         throwUnless(ERROR_SBT_REVOKED, self.revokedAt == 0);
-        
+
         message(MessageParameters {
             to: msg.dest,
             value: 0,
@@ -163,30 +161,30 @@ contract SBTItem {
     }
 
     receive(msg: GetStaticData) {
-        message(MessageParameters{
+        message(MessageParameters {
             to: sender(),
             value: 0,
             mode: SendRemainingValue,
             bounce: false,
-            body: ReportStaticData{
+            body: ReportStaticData {
                 queryId: msg.queryId,
                 index: self.itemIndex,
-                collection: self.collectionAddress
-            }.toCell()
+                collection: self.collectionAddress,
+            }.toCell(),
         });
     }
 
     bounced(msg: bounced<OwnershipProof>) {
         throwUnless(ERROR_NOT_INITIALIZED, self.isInitialized);
-        
-        message(MessageParameters{
+
+        message(MessageParameters {
             to: self.owner!!,
             value: 0,
             mode: SendRemainingValue | SendIgnoreErrors,
             bounce: false,
-            body: OwnershipProofBounced{
-                queryId: msg.queryId
-            }.toCell()
+            body: OwnershipProofBounced {
+                queryId: msg.queryId,
+            }.toCell(),
         });
     }
 

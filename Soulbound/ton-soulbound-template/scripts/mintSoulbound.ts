@@ -4,14 +4,14 @@ import { NetworkProvider } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider) {
     const collectionAddress = Address.parse("COLLECTION_ADDRESS_HERE");
-    
+
     const soulboundCollection = provider.open(
         SoulboundCollection.fromAddress(collectionAddress)
     );
 
     const queryId = 0n;
     const recipientAddress = Address.parse("RECIPIENT_ADDRESS_HERE");
-    const itemContent = beginCell().storeStringTail("CONTENT_HERE").endCell(); 
+    const itemContent = beginCell().storeStringTail("CONTENT_HERE").endCell();
 
     try {
         await soulboundCollection.send(

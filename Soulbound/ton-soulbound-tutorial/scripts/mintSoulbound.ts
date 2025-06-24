@@ -5,7 +5,7 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider) {
     // Replace with your deployed collection address
     const collectionAddress = Address.parse("COLLECTION_ADDRESS_HERE");
-    
+
     const soulboundCollection = provider.open(
         SoulboundCollection.fromAddress(collectionAddress)
     );

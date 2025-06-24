@@ -1,6 +1,6 @@
 import "./messages.tact";
 
-const MIN_TON_FOR_STORAGE: Int = ton("0.05"); 
+const MIN_TON_FOR_STORAGE: Int = ton("0.05");
 
 // Soulbound Collection contract
 // https://github.com/ton-blockchain/TEPs/blob/master/text/0085-sbt-standard.md
@@ -9,7 +9,6 @@ const MIN_TON_FOR_STORAGE: Int = ton("0.05");
 // It has other endpoints : ProveOwnership, Revoke, OwnershipProof and Destroy
 // For NFT standard see : https://github.com/magayton/ton-templates/tree/master/NFT
 
-
 // Use contract parameters to init
 // https://docs.tact-lang.org/book/gas-best-practices/#prefer-contract-parameters-to-init-and-contract-fields
 contract SoulboundCollection(
@@ -17,12 +16,11 @@ contract SoulboundCollection(
     ownerAddress: Address,
     collectionContent: Cell,
 ) {
-
     // Simple deployment receiver
     // Could use cashback(sender()) but that would not leave much tokens for the contract
-    receive() { 
+    receive() {
         let value = context().value;
-        message(MessageParameters{
+        message(MessageParameters {
             to: sender(),
             value: value - MIN_TON_FOR_STORAGE,
             mode: SendIgnoreErrors,
@@ -36,18 +34,18 @@ contract SoulboundCollection(
 
         // deploy SBTItem contract and Initialize it (Transfer can't be used for initialization)
         // https://docs.tact-lang.org/book/gas-best-practices/#use-deploy-function-for-on-chain-deployments
-        deploy(DeployParameters{
+        deploy(DeployParameters {
             init: initOf SBTItem(
-                myAddress(), 
+                myAddress(),
                 self.nextItemIndex,
             ),
             mode: SendIgnoreErrors,
             value: context().value,
             // Use ItemInit instead of Transfer for classic NFT
             body: ItemInit {
-                    newOwner: msg.to,
-                    content: msg.itemContent,
-                    authorityAddress: self.ownerAddress,
+                newOwner: msg.to,
+                content: msg.itemContent,
+                authorityAddress: self.ownerAddress,
             }.toCell(),
         });
 
@@ -64,14 +62,14 @@ contract SoulboundCollection(
         return initOf SBTItem(myAddress(), itemIndex);
     }
 
-    get fun get_collection_data(): CollectionData {     
+    get fun get_collection_data(): CollectionData {
         let b: StringBuilder = beginString();
         let collectionData: String = self.collectionContent.asSlice().asString();
         b.append(collectionData);
-        return CollectionData{
-            nextItemIndex: self.nextItemIndex, 
-            collectionContent: b.toCell(), 
-            ownerAddress: self.ownerAddress
+        return CollectionData {
+            nextItemIndex: self.nextItemIndex,
+            collectionContent: b.toCell(),
+            ownerAddress: self.ownerAddress,
         };
     }
 
@@ -79,31 +77,30 @@ contract SoulboundCollection(
         let b: StringBuilder = beginString();
         let collectionContentStr: String = self.collectionContent.asSlice().asString();
         let individualContentStr: String = individual_content.asSlice().asString();
-        
+
         b.append(collectionContentStr);
         b.append(individualContentStr);
-        
+
         return b.toCell();
     }
 }
 
-// SBT Item Contract 
+// SBT Item Contract
 // Can't be deployed with contract parameters because of TEP-62 requirement :  get_nft_address_by_index(int index)
 // If we use contract parameters, we can't use initOf SBTItem(collectionAddress, itemIndex, owner, individualContent)
 // Because we probably don't know all the parameters when we want to use the get_nft_address_by_index(int index) method.
 // So here we use contract state variables and init() function
 contract SBTItem {
-
     // Contract state variables
-    isInitialized: Bool = false;     // Flag to check if the contract is initialized
+    isInitialized: Bool = false; // Flag to check if the contract is initialized
     collectionAddress: Address; // Address of the NFT collection
-    itemIndex: Int;             // Index of the NFT item in the collection
-    owner: Address?;            // Owner of the NFT item (Address? because we do not want it to be mandatory for initialization)
-    individualContent: Cell?;   // Individual content of the NFT item (Cell? because we do not want it to be mandatory for initialization)
+    itemIndex: Int; // Index of the NFT item in the collection
+    owner: Address?; // Owner of the NFT item (Address? because we do not want it to be mandatory for initialization)
+    individualContent: Cell?; // Individual content of the NFT item (Cell? because we do not want it to be mandatory for initialization)
     authorityAddress: Address?; // Address of the authority that can revoke 
     revokedAt: Int as uint64 = 0; // Time when the SBT was revoked (0 means not revoked)
 
-   init(collection_address: Address, item_index: Int){
+    init(collection_address: Address, item_index: Int) {
         throwUnless(ERROR_NOT_COLLECTION, sender() == collection_address);
         self.collectionAddress = collection_address;
         self.itemIndex = item_index;
@@ -114,7 +111,7 @@ contract SBTItem {
     receive(msg: ItemInit) {
         throwUnless(ERROR_ALREADY_INITIALIZED, self.isInitialized);
         throwUnless(ERROR_NOT_COLLECTION, sender() == self.collectionAddress);
-        
+
         self.owner = msg.newOwner;
         self.individualContent = msg.content;
         self.authorityAddress = msg.authorityAddress;
@@ -152,17 +149,17 @@ contract SBTItem {
     receive(msg: Destroy) {
         throwUnless(ERROR_NOT_INITIALIZED, self.isInitialized);
         throwUnless(ERROR_NOT_SBT_OWNER, sender() == self.owner);
-        
+
         // Send remaining balance to owner
-        message(MessageParameters{
+        message(MessageParameters {
             to: sender(),
             value: 0,
             // Destroy the contract by sending remaining balance
             mode: SendRemainingBalance | SendDestroyIfZero,
             bounce: false,
-            body: Excesses{
-                queryId: msg.queryId
-            }.toCell()
+            body: Excesses {
+                queryId: msg.queryId,
+            }.toCell(),
         });
     }
 
@@ -170,7 +167,7 @@ contract SBTItem {
     receive(msg: Revoke) {
         throwUnless(ERROR_NOT_COLLECTION_OWNER, sender() == self.authorityAddress);
         throwUnless(ERROR_ALREADY_REVOKED, self.revokedAt == 0);
-        
+
         // Set revoked_at to current time
         self.revokedAt = now();
     }
@@ -178,7 +175,7 @@ contract SBTItem {
     // Allows third parties to request ownership info
     receive(msg: RequestOwner) {
         throwUnless(ERROR_SBT_REVOKED, self.revokedAt == 0);
-        
+
         // Send owner info to destination
         message(MessageParameters {
             to: msg.dest,
@@ -199,32 +196,32 @@ contract SBTItem {
 
     // Handle get static data requests
     receive(msg: GetStaticData) {
-        message(MessageParameters{
+        message(MessageParameters {
             to: sender(),
             value: 0,
             mode: SendRemainingValue,
             bounce: false,
-            body: ReportStaticData{
+            body: ReportStaticData {
                 queryId: msg.queryId,
                 index: self.itemIndex,
-                collection: self.collectionAddress
-            }.toCell()
+                collection: self.collectionAddress,
+            }.toCell(),
         });
     }
 
     // Handle bounced ownership proof messages
     bounced(msg: bounced<OwnershipProof>) {
         throwUnless(ERROR_NOT_INITIALIZED, self.isInitialized);
-        
+
         // Forward bounced message to owner
-        message(MessageParameters{
+        message(MessageParameters {
             to: self.owner!!,
             value: 0,
             mode: SendRemainingValue | SendIgnoreErrors,
             bounce: false,
-            body: OwnershipProofBounced{
-                queryId: msg.queryId
-            }.toCell()
+            body: OwnershipProofBounced {
+                queryId: msg.queryId,
+            }.toCell(),
         });
     }
 

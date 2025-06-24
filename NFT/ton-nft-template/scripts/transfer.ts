@@ -6,9 +6,9 @@ export async function run(provider: NetworkProvider) {
     console.log('Transferring NFT...');
 
     const nftItemAddress = Address.parse('YOUR_NFT_ITEM_ADDRESS_HERE');
-    
+
     const newOwnerAddress = Address.parse('NEW_OWNER_ADDRESS_HERE');
-    
+
     const nftItem = provider.open(NftItem.fromAddress(nftItemAddress));
 
     try {
