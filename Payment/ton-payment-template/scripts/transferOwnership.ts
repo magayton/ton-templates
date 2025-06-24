@@ -5,9 +5,9 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider) {
     console.log('Transferring ownership of Payment contract ...');
 
-    const payment = provider.open(await Payment.fromInit(provider.sender().address!, false));
+   const contractAddress = Address.parse('CONTRACT_ADDRESS_HERE');
+   const payment = provider.open(Payment.fromAddress(contractAddress));
 
-    console.log('Contract address:', payment.address.toString());
 
     const isDeployed = await provider.isContractDeployed(payment.address);
     if (!isDeployed) {
@@ -15,10 +15,7 @@ export async function run(provider: NetworkProvider) {
         return;
     }
 
-    // Set new owner address (replace with actual address)
-    const newOwnerAddress = Address.parse('EQD4FPq-PRDieaQKkizFPRtSDyucUIqrj0v_zXJmqaDp6_0t');
-    
-    console.log('Transferring ownership to:', newOwnerAddress.toString());
+    const newOwnerAddress = Address.parse('NEW_OWNER_ADDRESS');
 
     try {
         await payment.send(

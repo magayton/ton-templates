@@ -9,7 +9,7 @@ import "./messages";
 const MIN_TON_FOR_STORAGE: Int = ton("0.05");
 
 // Contract inherits Ownable for access control and Resumable for stop/resume functionality
-// It uses contract parameters to init the contract 
+// It uses contract parameters to init the contract
 // https://docs.tact-lang.org/book/contracts/#parameters
 // https://docs.tact-lang.org/book/gas-best-practices/#prefer-contract-parameters-to-init-and-contract-fields
 contract TONPaymentHandler(

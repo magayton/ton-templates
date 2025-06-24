@@ -4,7 +4,7 @@ import { NetworkProvider } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider) {
     console.log('Deploying TON Payment Handler...');
-    
+
     // Initialize contract with required parameters
     const payment = provider.open(
         await TONPaymentHandler.fromInit(
@@ -16,8 +16,6 @@ export async function run(provider: NetworkProvider) {
             Dictionary.empty()           // depositsByAddress: map<Address, Int as coins>
         )
     );
-
-    console.log('Contract address:', payment.address.toString());
 
     // Use "send" method to deploy
     // https://docs.tact-lang.org/book/gas-best-practices/#do-not-deploy-contracts-with-deployable-trait
@@ -33,5 +31,5 @@ export async function run(provider: NetworkProvider) {
         return;
     }
 
-    console.log('✅ Payment contract deployed!');
+    console.log('Payment contract deployed!');
 }

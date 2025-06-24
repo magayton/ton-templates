@@ -5,7 +5,7 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider) {
     console.log('Deploying NFT Collection contract ...');
 
-    // TO CHANGE WITH YOUR OWN VALUES
+    // To change
     const OFFCHAIN_PREFIX = 0x01;
     const collectionContent = beginCell()
         .storeInt(OFFCHAIN_PREFIX, 8)
@@ -13,9 +13,9 @@ export async function run(provider: NetworkProvider) {
         .endCell();
 
     const nFTCollection = provider.open(await NftCollection.fromInit(
-        0n, // nextItemIndex
-        provider.sender().address!, // ownerAddress (you can write your own address here instead)
-        null, // royaltyParams
+        0n,
+        provider.sender().address!, // ownerAddress to change
+        null,
         collectionContent
     ));
 

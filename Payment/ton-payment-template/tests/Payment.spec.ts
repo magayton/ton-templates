@@ -1,6 +1,6 @@
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { toNano, Cell, Address } from '@ton/core';
-import { Payment, loadDepositReceived, loadWithdrawalExecuted} from '../build/Payment/Payment_Payment';
+import { Payment, loadDepositReceived, loadWithdrawalExecuted } from '../build/Payment/Payment_Payment';
 import '@ton/test-utils';
 
 describe('Payment', () => {
@@ -44,7 +44,7 @@ describe('Payment', () => {
 
             const balance = await payment.getBalance();
             expect(balance).toBeGreaterThan(0n); // Should have deployment value
-            
+
             const availableBalance = await payment.getAvailableBalance();
             expect(availableBalance).toBeGreaterThanOrEqual(0n);
         });
@@ -57,7 +57,7 @@ describe('Payment', () => {
         it('should have correct initial state', async () => {
             const balance = await payment.getBalance();
             const availableBalance = await payment.getAvailableBalance();
-            
+
             expect(balance).toBeGreaterThan(0n);
             expect(availableBalance).toBeLessThanOrEqual(balance);
         });
@@ -67,7 +67,7 @@ describe('Payment', () => {
         it('should accept plain TON transfers', async () => {
             const depositAmount = toNano('1');
             const initialBalance = await payment.getBalance();
-            
+
             const result = await payment.send(
                 user1.getSender(),
                 {
@@ -274,7 +274,7 @@ describe('Payment', () => {
 
         it('should preserve minimum storage amount', async () => {
             const availableBalance = await payment.getAvailableBalance();
-            
+
             // Try to withdraw slightly more than available (should fail)
             const excessiveAmount = availableBalance + toNano('0.01');
 
@@ -297,10 +297,10 @@ describe('Payment', () => {
 
         it('should succeed when withdrawing available balance', async () => {
             const availableBalance = await payment.getAvailableBalance();
-    
+
             // Withdraw slightly less than available (due to strict < comparison)
             const withdrawAmount = availableBalance - toNano('0.01');
-            
+
             const deployerBalanceBefore = await deployer.getBalance();
 
             // This should succeed
@@ -585,7 +585,7 @@ describe('Payment', () => {
         it('should return correct available balance', async () => {
             const balance = await payment.getBalance();
             const availableBalance = await payment.getAvailableBalance();
-            
+
             expect(availableBalance).toBeLessThan(balance);
             expect(availableBalance).toBeGreaterThan(0n);
             expect(balance - availableBalance).toEqual(toNano('0.05')); // MIN_TON_FOR_STORAGE
@@ -594,7 +594,7 @@ describe('Payment', () => {
         it('should handle edge case when balance is at minimum', async () => {
             // Withdraw almost everything
             const availableBalance = await payment.getAvailableBalance();
-            
+
             await payment.send(
                 deployer.getSender(),
                 { value: toNano('0.1') },

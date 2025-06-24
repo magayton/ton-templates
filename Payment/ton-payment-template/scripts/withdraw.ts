@@ -5,9 +5,8 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider) {
     console.log('Withdrawing from Payment contract ...');
 
-    const payment = provider.open(await Payment.fromInit(provider.sender().address!, false));
-
-    console.log('Contract address:', payment.address.toString());
+    const contractAddress = Address.parse('CONTRACT_ADDRESS_HERE');
+    const payment = provider.open(Payment.fromAddress(contractAddress));
 
     const isDeployed = await provider.isContractDeployed(payment.address);
     if (!isDeployed) {
@@ -18,16 +17,14 @@ export async function run(provider: NetworkProvider) {
     const availableBalance = await payment.getAvailableBalance();
     console.log('Available balance for withdrawal:', availableBalance.toString(), 'nanoTON');
 
-    const withdrawAmount = toNano('0.5');
-    const destination = provider.sender().address!; 
+
+    const withdrawAmount = toNano('AMOUNT_HERE');
+    const destination = Address.parse('DESTINATION_ADDRESS_HERE');
 
     if (withdrawAmount > availableBalance) {
         console.error('Withdrawal amount exceeds available balance.');
         return;
     }
-
-    console.log('Withdrawing:', withdrawAmount.toString(), 'nanoTON');
-    console.log('To address:', destination.toString());
 
     try {
         await payment.send(

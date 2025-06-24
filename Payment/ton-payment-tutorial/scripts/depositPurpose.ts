@@ -4,24 +4,20 @@ import { NetworkProvider } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider) {
     console.log('Making a deposit to TON Payment Handler...');
-    
+
     // Contract address (replace with your deployed contract address)
-    const contractAddress = Address.parse('kQDhFNocZIru9_IB1h66RmFjy6j7KhFMlX7qsYWiapaQ5ny4');
+    const contractAddress = Address.parse('CONTRACT_ADDRESS_HERE');
     const payment = provider.open(TONPaymentHandler.fromAddress(contractAddress));
 
     // Deposit parameters
-    const depositAmount = toNano('0.09'); 
+    const depositAmount = toNano('0.1');
     const purpose = 'Payment with purpose !';
-
-    console.log('Contract address: ', contractAddress.toString());
-    console.log('Deposit amount: ', depositAmount.toString(), 'nanoTON');
-    console.log('Purpose: ', purpose);
 
     try {
         // Send deposit message
         await payment.send(
             provider.sender(),
-            { 
+            {
                 value: depositAmount + toNano('0.05') // Deposit amount + gas
             },
             {
@@ -34,5 +30,5 @@ export async function run(provider: NetworkProvider) {
         return;
     }
 
-    console.log('Deposit sent successfully!');        
+    console.log('Deposit sent successfully!');
 }

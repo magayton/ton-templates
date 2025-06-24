@@ -1,13 +1,12 @@
-import { toNano } from '@ton/core';
+import { Address, toNano } from '@ton/core';
 import { Payment } from '../build/Payment/Payment_Payment';
 import { NetworkProvider } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider) {
     console.log('Making deposit to Payment contract ...');
 
-    const payment = provider.open(await Payment.fromInit(provider.sender().address!, false));
-
-    console.log('Contract address:', payment.address.toString());
+    const contractAddress = Address.parse('CONTRACT_ADDRESS_HERE');
+    const payment = provider.open(Payment.fromAddress(contractAddress));
 
     const isDeployed = await provider.isContractDeployed(payment.address);
     if (!isDeployed) {
@@ -15,8 +14,7 @@ export async function run(provider: NetworkProvider) {
         return;
     }
 
-    const depositAmount = toNano('1.0');
-    console.log('Depositing:', depositAmount.toString(), 'nanoTON');
+    const depositAmount = toNano('DEPOSIT_AMOUNT_HERE');
 
     try {
         await payment.send(
