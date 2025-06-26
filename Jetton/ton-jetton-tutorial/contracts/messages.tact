@@ -8,6 +8,11 @@ const ERROR_INVALID_AMOUNT: Int = 304;
 const ERROR_NOT_JETTON_MASTER: Int = 305;
 const ERROR_NOT_SAME_WORKCHAIN: Int = 306;
 
+const gasForTransfer: Int = 12000;
+const gasForBurn: Int = 7000;
+const minTonsForStorage: Int = ton("0.05");
+const MinTonForWalletDeploy: Int = ton("0.05");
+
 // ===== TEP74 STANDARD =====
 
 // Jetton Master Messages
@@ -105,6 +110,10 @@ message Upgrade {
     queryId: Int as uint64;
     newData: Cell;
     newCode: Cell;
+}
+
+message ChangeMintState {
+    queryId: Int as uint64;
 }
 
 // ===== DATA STRUCTURES =====

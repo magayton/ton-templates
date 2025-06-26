@@ -3,37 +3,27 @@ import "@stdlib/ownable";
 
 // JettonWallet is a contract deployed for every user (address)
 // It tracks the current balance for the owner address
-// It uses "init()" and not contract parameters because of
-// getJettonWalletInit(ownerAddress: Address): StateInit in JettonMaster
-contract JettonWallet with Ownable {
-    // STORAGE STATE
-    balance: Int as coins;
-    owner: Address;
-    jettonMasterAddress: Address;
-
-    // GAS CONSTANTS
-    const minTonForStorage: Int = ton("0.05");
-    const gasConsumption: Int = ton("0.01");
-
-    // CONTRACT DEPLOYMENT INIT
-    init(jettonMasterAddress: Address, ownerAddress: Address) {
-        self.balance = 0;
-        self.owner = ownerAddress; // Ownable trait field
-        self.jettonMasterAddress = jettonMasterAddress;
-    }
+// Contract init can be obtained with initOf JettonWallet(0, self.jettonMasterAddress, msg.from)
+// Since contract are always deployed with 0 balance
+contract JettonWallet(
+    balance: Int as coins,
+    jettonMasterAddress: Address,
+    owner: Address,
+) with Ownable {
 
     // INTERNAL TRANSFER (FROM MASTER CONTRACT OR OTHER WALLET)
     receive(msg: InternalTransfer) {
-        let ctx: Context = context();
+        let sender: Address = sender();
 
         // Validate sender is either jetton master OR another jetton wallet
-        let expectedWalletInit: StateInit = initOf JettonWallet(self.jettonMasterAddress, msg.from);
+        let expectedWalletInit: StateInit = initOf JettonWallet(0, self.jettonMasterAddress, msg.from);
         let expectedWalletAddress: Address = contractAddress(expectedWalletInit);
 
+        // https://docs.tact-lang.org/ref/core-addresses/#stateinithassamebasechainaddress
         throwUnless(
             ERROR_INVALID_SENDER,
-            ctx.sender == self.jettonMasterAddress ||
-            ctx.sender == expectedWalletAddress,
+            sender == self.jettonMasterAddress ||
+            expectedWalletAddress.hasSameBasechainAddress(sender),
         );
 
         // Reserve storage fees (https://docs.tact-lang.org/ref/core-contextstate/#nativereserve)
@@ -74,6 +64,7 @@ contract JettonWallet with Ownable {
     // TRANSFER (FROM OWNER)
     receive(msg: Transfer) {
         self.requireOwner();
+        forceBasechain(msg.destination);
 
         let ctx: Context = context();
         throwUnless(ERROR_INSUFFICIENT_BALANCE, self.balance > msg.amount);
@@ -83,9 +74,18 @@ contract JettonWallet with Ownable {
 
         // TEP-74 gas validation: must guarantee sending at least
         // in_msg_value - forward_ton_amount - 2 * max_tx_gas_price - 2 * fwd_fee to response_destination
-        let fwdFee: Int = ctx.readForwardFee();
+        /*let fwdFee: Int = ctx.readForwardFee();
         let guaranteedAmount: Int = ctx.value - msg.forwardTonAmount - 2 * self.gasConsumption - 2 * fwdFee;
-        throwUnless(ERROR_INSUFFICIENT_GAS, guaranteedAmount > 0);
+        throwUnless(ERROR_INSUFFICIENT_GAS, guaranteedAmount > 0);*/
+
+        let fwdCount = 1 + sign(msg.forwardTonAmount); // msg.forwardTonAmount is coins, so it's positive
+        require(
+            ctx.value >
+            msg.forwardTonAmount +
+            fwdCount * ctx.readForwardFee() +
+            (2 * getComputeFee(gasForTransfer, false) + minTonsForStorage),
+            "Insufficient amount of TON attached",
+        );
 
         // Reserve storage fees
         nativeReserve(self.minTonForStorage, ReserveExact);
@@ -99,7 +99,7 @@ contract JettonWallet with Ownable {
 
         // Call internal transfer to destination wallet with guaranteed excesses amount
         // If wallet does not exist for this address, it will automatically be deployed
-        message(MessageParameters {
+        /*message(MessageParameters {
             to: destinationWalletAddress,
             value: guaranteedAmount + msg.forwardTonAmount,
             mode: SendPayGasSeparately,
@@ -112,7 +112,8 @@ contract JettonWallet with Ownable {
                 forwardTonAmount: msg.forwardTonAmount,
                 forwardPayload: msg.forwardPayload,
             }.toCell(),
-        });
+        });*/
+        // Change this to deploy
     }
 
     // BURN TOKENS
@@ -124,11 +125,8 @@ contract JettonWallet with Ownable {
         // Validate sufficient balance
         throwUnless(ERROR_INSUFFICIENT_BALANCE, self.balance >= msg.amount);
 
-        // TEP-74 burn gas validation: must send at least in_msg_value - max_tx_gas_price to response_destination
-        throwUnless(ERROR_INSUFFICIENT_GAS, ctx.value >= self.gasConsumption);
-
-        // Reserve storage fees
-        nativeReserve(self.minTonForStorage, ReserveExact);
+        let fwdFee: Int = ctx.readForwardFee();
+        require(ctx.value > (fwdFee + 2 * getComputeFee(gasForBurn, false)), "Insufficient amount of TON attached");
 
         // Update balance
         self.balance -= msg.amount;
@@ -151,6 +149,10 @@ contract JettonWallet with Ownable {
     // BOUNCED MESSAGE HANDLER
     bounced(msg: bounced<InternalTransfer>) {
         // Handle bounced transfers - restore balance
+        self.balance += msg.amount;
+    }
+
+    bounced(msg: bounced<Burn>) {
         self.balance += msg.amount;
     }
 

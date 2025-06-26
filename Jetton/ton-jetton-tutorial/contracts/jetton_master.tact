@@ -10,12 +10,9 @@ import "@stdlib/ownable";
 contract JettonMaster(
     totalSupply: Int as coins,
     owner: Address,
-    jettonWalletCode: Cell,
     metadataUri: String,
+    mintable: Bool,
 ) with OwnableTransferable {
-    // GAS CONSTANTS
-    const StorageReserve: Int = ton("0.05");
-    const MinTonForWalletDeploy: Int = ton("0.05");
 
     receive() {
         // Accept deployment with minimum storage reserve
@@ -33,11 +30,15 @@ contract JettonMaster(
     // It deploys a smart contract "jetton wallet" to track data for this specific user
     receive(msg: Mint) {
         self.requireOwner();
+        require(self.mintable, "Mint is closed");
 
         let ctx: Context = context();
 
-        // Validate owner and sufficient gas to mint
-        throwUnless(ERROR_INSUFFICIENT_GAS, ctx.value >= self.MinTonForWalletDeploy + msg.forwardTonAmount);
+        // Validate owner and sufficient gas to mint with compute fees
+        throwUnless(ERROR_INSUFFICIENT_GAS, 
+            ctx.value > self.MinTonForWalletDeploy + msg.forwardTonAmount + 
+            ctx.readForwardFee() + 2 * getComputeFee(self.gasForTransfer, false)
+        );
 
         // Validate same workchain (prevent cross-workchain minting)
         throwUnless(ERROR_NOT_SAME_WORKCHAIN, parseStdAddress(msg.to.asSlice()).workchain == parseStdAddress(myAddress().asSlice()).workchain);
@@ -55,7 +56,8 @@ contract JettonMaster(
         deploy(DeployParameters {
             init: walletInit,
             value: 0,
-            mode: SendRemainingValue,
+            bounce: true,
+            mode: SendRemainingValue | SendBounceIfActionFail,
             body: InternalTransfer {
                 queryId: msg.queryId,
                 amount: msg.amount,
@@ -125,10 +127,10 @@ contract JettonMaster(
     get fun get_jetton_data(): JettonData {
         return JettonData {
             totalSupply: self.totalSupply,
-            mintable: true, // Always mintable by admin
+            mintable: self.mintable,
             adminAddress: self.owner,
             jettonContent: self.buildContentCell(),
-            jettonWalletCode: self.jettonWalletCode,
+            jettonWalletCode: codeOf JettonWallet,
         };
     }
 
@@ -149,9 +151,14 @@ contract JettonMaster(
         setCode(msg.newCode);
     }
 
+    receive(msg: ChangeMintState) {
+        self.requireOwner();
+        self.mintable = !self.mintable;
+    }
+
     // UTILITY FUNCTIONS
     inline fun getJettonWalletInit(ownerAddress: Address): StateInit {
-        return initOf JettonWallet(myAddress(), ownerAddress);
+        return initOf JettonWallet(0, myAddress(), ownerAddress);
     }
 
     inline fun buildContentCell(): Cell {
