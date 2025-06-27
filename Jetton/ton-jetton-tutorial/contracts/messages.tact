@@ -7,11 +7,14 @@ const ERROR_INSUFFICIENT_BALANCE: Int = 303;
 const ERROR_INVALID_AMOUNT: Int = 304;
 const ERROR_NOT_JETTON_MASTER: Int = 305;
 const ERROR_NOT_SAME_WORKCHAIN: Int = 306;
+const ERROR_MINT_CLOSED: Int = 307;
 
+// These 2 gas prices come from experiments
 const gasForTransfer: Int = 12000;
 const gasForBurn: Int = 7000;
+
 const minTonsForStorage: Int = ton("0.05");
-const MinTonForWalletDeploy: Int = ton("0.05");
+const minTonForWalletDeploy: Int = ton("0.05");
 
 // ===== TEP74 STANDARD =====
 
@@ -83,7 +86,7 @@ message(0x2c76b973) ProvideWalletAddress {
 message(0xd1735400) TakeWalletAddress {
     queryId: Int as uint64;
     walletAddress: Address;
-    ownerAddress: Slice as remaining;
+    ownerAddress: Cell?;
 }
 
 // ===== ADMIN MANAGEMENT MESSAGES =====

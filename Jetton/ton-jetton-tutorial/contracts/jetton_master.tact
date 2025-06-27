@@ -13,14 +13,13 @@ contract JettonMaster(
     metadataUri: String,
     mintable: Bool,
 ) with OwnableTransferable {
-
     receive() {
-        // Accept deployment with minimum storage reserve
+        // Accept deployment call with minimum storage reserve
         // On other calls, it will just keep 0.05 ton
         let value = context().value;
         message(MessageParameters {
             to: sender(),
-            value: value - self.StorageReserve,
+            value: value - minTonsForStorage,
             mode: SendIgnoreErrors,
             bounce: false,
         });
@@ -30,29 +29,36 @@ contract JettonMaster(
     // It deploys a smart contract "jetton wallet" to track data for this specific user
     receive(msg: Mint) {
         self.requireOwner();
-        require(self.mintable, "Mint is closed");
+        throwUnless(ERROR_MINT_CLOSED, self.mintable);
 
         let ctx: Context = context();
 
-        // Validate owner and sufficient gas to mint with compute fees
-        throwUnless(ERROR_INSUFFICIENT_GAS, 
-            ctx.value > self.MinTonForWalletDeploy + msg.forwardTonAmount + 
-            ctx.readForwardFee() + 2 * getComputeFee(self.gasForTransfer, false)
+        // Validate sufficient gas to mint with compute fees
+        //
+        throwUnless(
+            ERROR_INSUFFICIENT_GAS,
+            ctx.value > minTonForWalletDeploy + msg.forwardTonAmount +
+                        ctx.readForwardFee() + 2 * getComputeFee(gasForTransfer, false),
         );
 
         // Validate same workchain (prevent cross-workchain minting)
+        // It ensure consistent gas costs and predictable behavior
         throwUnless(ERROR_NOT_SAME_WORKCHAIN, parseStdAddress(msg.to.asSlice()).workchain == parseStdAddress(myAddress().asSlice()).workchain);
 
         // Reserve storage fees (https://docs.tact-lang.org/ref/core-contextstate/#nativereserve)
         // Why nativeReserve() instead of basic math to ensure minimum storage reserve
-        // => It ensures at protocol level that contract will reserve this amount. Jetton has complex interactions which could lead to error with basic math
-        nativeReserve(self.StorageReserve, ReserveExact);
+        // => It ensures at protocol level that contract will reserve this amount
+        // It is not mandatory here since mint can only be called by admin and it costs a lot of gas
+        nativeReserve(minTonsForStorage, ReserveExact);
 
         // Fetch wallet state init of specific address
         let walletInit: StateInit = self.getJettonWalletInit(msg.to);
+
+        // Update total supply
         self.totalSupply += msg.amount;
 
-        // Deploy jetton wallet and call InternalTransfer on it and update its balance with first mint
+        // Deploy jetton wallet and call InternalTransfer on it to update its balance with first mint
+        // If contract is already deployed, it just call InternalTransfer on it (it executes the body message)
         deploy(DeployParameters {
             init: walletInit,
             value: 0,
@@ -69,14 +75,14 @@ contract JettonMaster(
         });
     }
 
-    // When a user burns tokens from "jetton_wallet" contract, master contract get a BurnNotification
+    // When user burn tokens from "jetton wallet" contract, master contract get a BurnNotification
     // To keep track of the total supply
     receive(msg: BurnNotification) {
-        let ctx: Context = context();
-
         // Validate sender is legitimate wallet
-        let expectedWallet: Address = contractAddress(self.getJettonWalletInit(msg.sender));
-        throwUnless(ERROR_INVALID_SENDER, ctx.sender == expectedWallet);
+        // https://docs.tact-lang.org/ref/core-addresses/#stateinithassamebasechainaddress
+        let walletInit = self.getJettonWalletInit(msg.sender);
+        let isExpectedWallet: Bool = walletInit.hasSameBasechainAddress(sender());
+        throwUnless(ERROR_INVALID_SENDER, isExpectedWallet);
 
         // Update total supply
         self.totalSupply -= msg.amount;
@@ -86,41 +92,50 @@ contract JettonMaster(
             message(MessageParameters {
                 to: msg.responseDestination!!,
                 value: 0,
-                mode: SendRemainingValue + SendIgnoreErrors,
+                mode: SendRemainingValue | SendIgnoreErrors, // Ignore is ok here, supply is already updated
                 bounce: false,
                 body: Excesses { queryId: 0 }.toCell(),
             });
         }
     }
 
-    bounced(msg: bounced<InternalTransfer>) {
-        // Handle bounced mint operations - restore total supply
-        self.totalSupply -= msg.amount;
-    }
-
     // TEP89 WALLET DISCOVERY
     receive(msg: ProvideWalletAddress) {
-        throwUnless(ERROR_INSUFFICIENT_GAS, context().value >= ton("0.005"));
+        let ctx: Context = context();
+        // TEP89: Minimum gas requirement = 5000 gas + forward fees ≈ 0.0061 TON
+        let minGasRequired: Int = getComputeFee(5000, false) + ctx.readForwardFee();
+        throwUnless(ERROR_INSUFFICIENT_GAS, ctx.value > minGasRequired);
 
-        // Check it is on same workchain
+        // Calculate owner address if it is on the same workchain
+        // Not the best way, it would be better with :
+        // ? contractBasechainAddress(self.getJettonWalletInit(msg.ownerAddress)): emptyBasechainAddress();
+        // However it will create a BaseChainAddress and not an Address type
+        // Since TEP89 provides this : take_wallet_address#d1735400 query_id:uint64 wallet_address:MsgAddress owner_address:(Maybe ^MsgAddress) = InternalMsgBody;
+        // We can not use BaseChainAddress but Address to follow the standard
+        // However if you use BaseChainAddress for best practice you can see a "trick" here
+        // https://github.com/tact-lang/defi-cookbook/blob/main/jettons/impl/utils.tact#L10
+        // To "transform" the BaseChainAddress to Address. I am not using it since Tact can evolve and change this behavior
         let walletAddress: Address = parseStdAddress(msg.ownerAddress.asSlice()).workchain == parseStdAddress(myAddress().asSlice()).workchain
             ? contractAddress(self.getJettonWalletInit(msg.ownerAddress))
-            : newAddress(0, 0);
-
-        let ownerSlice: Slice = msg.includeAddress ? msg.ownerAddress.asSlice() : emptySlice();
+            : emptyAddress();
 
         // No bounce "handling" because it acts as a notification
         message(MessageParameters {
-            to: context().sender,
+            to: sender(),
             value: 0,
-            mode: SendRemainingValue + SendBounceIfActionFail,
+            mode: SendRemainingValue,
             bounce: true,
             body: TakeWalletAddress {
                 queryId: msg.queryId,
                 walletAddress,
-                ownerAddress: ownerSlice,
+                ownerAddress: msg.includeAddress ? beginCell().storeAddress(msg.ownerAddress).endCell() : null,
             }.toCell(),
         });
+    }
+
+    bounced(msg: bounced<InternalTransfer>) {
+        // Handle bounced mint operations by restoring total supply
+        self.totalSupply -= msg.amount;
     }
 
     //  TEP74 GET METHODS
@@ -157,10 +172,13 @@ contract JettonMaster(
     }
 
     // UTILITY FUNCTIONS
+    // Since a wallet is always initialized with a 0 balance, it is predictible
+    // However it could not work for a NFT for example, with an item index changing
     inline fun getJettonWalletInit(ownerAddress: Address): StateInit {
         return initOf JettonWallet(0, myAddress(), ownerAddress);
     }
 
+    // https://docs.tact-lang.org/ref/stdlib-content/#createoffchaincontent
     inline fun buildContentCell(): Cell {
         return createOffchainContent(self.metadataUri);
     }
@@ -174,3 +192,8 @@ asm fun setData(newData: Cell) {
 asm fun setCode(newCode: Cell) {
     SETCODE
 }
+
+// ASSEMBLY FUNCTION TO CREATE AN EMPTY ADDRESS
+// https://docs.tact-lang.org/ref/core-addresses/#newaddress
+// (Unreliable information) it is a better way than calling newAddress(0, 0) ?
+asm fun emptyAddress(): Address { b{00} PUSHSLICE }
