@@ -34,7 +34,6 @@ contract JettonMaster(
         let ctx: Context = context();
 
         // Validate sufficient gas to mint with compute fees
-        //
         throwUnless(
             ERROR_INSUFFICIENT_GAS,
             ctx.value > minTonForWalletDeploy + msg.forwardTonAmount +
@@ -45,17 +44,20 @@ contract JettonMaster(
         // It ensure consistent gas costs and predictable behavior
         throwUnless(ERROR_NOT_SAME_WORKCHAIN, parseStdAddress(msg.to.asSlice()).workchain == parseStdAddress(myAddress().asSlice()).workchain);
 
-        // Reserve storage fees (https://docs.tact-lang.org/ref/core-contextstate/#nativereserve)
-        // Why nativeReserve() instead of basic math to ensure minimum storage reserve
-        // => It ensures at protocol level that contract will reserve this amount
-        // It is not mandatory here since mint can only be called by admin and it costs a lot of gas
-        nativeReserve(minTonsForStorage, ReserveExact);
 
         // Fetch wallet state init of specific address
         let walletInit: StateInit = self.getJettonWalletInit(msg.to);
 
         // Update total supply
         self.totalSupply += msg.amount;
+
+        // No nativeReserve here 
+        // I wanted to do nativeReserve(minTonsForStorage, ReserveExact);
+        // But from what I understand (it is not 100% sure) it creates a problem (Action phase code 37)
+        // Because TVM can not calculate with SendRemainingValue the amount needed to do all the tasks
+        // nativeReserve + SendRemainingValue = Reserve X, then send erything except what you reserved
+        // But "everything except what you reserved" needs to pay for the deploy action
+        // The TVM gets confused trying to calculate this with the reserve constraint
 
         // Deploy jetton wallet and call InternalTransfer on it to update its balance with first mint
         // If contract is already deployed, it just call InternalTransfer on it (it executes the body message)

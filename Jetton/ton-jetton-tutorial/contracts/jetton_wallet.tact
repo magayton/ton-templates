@@ -15,6 +15,9 @@ contract JettonWallet(
         let ctx: Context = context();
         let msgValue: Int = ctx.value;
         let sender: Address = sender();
+        let tonBalanceBeforeMsg = myBalance() - msgValue;
+
+        self.balance += msg.amount;
 
         // Validate sender is either jetton master OR another jetton wallet
         let expectedWalletInit: StateInit = initOf JettonWallet(0, self.jettonMasterAddress, msg.from);
@@ -25,11 +28,6 @@ contract JettonWallet(
             sender == self.jettonMasterAddress ||
             expectedWalletInit.hasSameBasechainAddress(sender),
         );
-
-        // Reserve storage fees (https://docs.tact-lang.org/ref/core-contextstate/#nativereserve)
-        nativeReserve(minTonsForStorage, ReserveExact);
-
-        self.balance += msg.amount;
 
         // Send notification if forward amount > 0
         // These TON pays for notifying the recipient about incoming jettons
@@ -51,12 +49,16 @@ contract JettonWallet(
             });
         }
 
+        // Reserve storage fees
+        // Why does it work here ? Because the message is using SendRemainingBalance and not SendRemainingValue
+        nativeReserve(max(tonBalanceBeforeMsg, minTonsForStorage), ReserveAtMost);
+
         // Send excess back to response address (same workchain only)
-        if (msg.responseAddress != null && parseStdAddress(msg.responseAddress!!.asSlice()).workchain == parseStdAddress(myAddress().asSlice()).workchain) {
+        if (msg.responseAddress != null && parseStdAddress(msg.responseAddress!!.asSlice()).workchain == parseStdAddress(myAddress().asSlice()).workchain && msgValue > 0) {
             message(MessageParameters {
                 to: msg.responseAddress!!,
-                value: msgValue,
-                mode: SendRemainingValue | SendIgnoreErrors,
+                value: 0,
+                mode: SendRemainingBalance | SendIgnoreErrors,
                 bounce: false,
                 body: Excesses { queryId: msg.queryId }.toCell(),
             });
