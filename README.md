@@ -12,13 +12,16 @@ A collection of production-ready TON smart contract templates written in **Tact*
 
 ## Repository Structure
 
-This repository contains three main contract categories, each with two implementations:
+This repository contains four main contract categories, each with two implementations:
 
 - **`template`** - Clean, ready to use contracts without comments
 - **`tutorial`** - Educational versions with detailed comments and explanations
 
 ```
 TON/
+  Jetton/
+    ton-jetton-template/ 
+    ton-jetton-tutorial/
   NFT/
     ton-nft-template/ 
     ton-nft-tutorial/
@@ -31,6 +34,15 @@ TON/
 ```
 
 ## Smart Contracts
+
+### Jetton Contract
+TEP-74 compliant fungible token implementation featuring:
+- Token minting and burning
+- Transfer operations
+- Metadata management
+- Mint state control
+- Wallet address queries
+- Gas-optimized operations
 
 ### Payment Contract
 Flexible payment processing contract featuring:
