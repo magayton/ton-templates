@@ -44,14 +44,13 @@ contract JettonMaster(
         // It ensure consistent gas costs and predictable behavior
         throwUnless(ERROR_NOT_SAME_WORKCHAIN, parseStdAddress(msg.to.asSlice()).workchain == parseStdAddress(myAddress().asSlice()).workchain);
 
-
         // Fetch wallet state init of specific address
         let walletInit: StateInit = self.getJettonWalletInit(msg.to);
 
         // Update total supply
         self.totalSupply += msg.amount;
 
-        // No nativeReserve here 
+        // No nativeReserve here
         // I wanted to do nativeReserve(minTonsForStorage, ReserveExact);
         // But from what I understand (it is not 100% sure) it creates a problem (Action phase code 37)
         // Because TVM can not calculate with SendRemainingValue the amount needed to do all the tasks

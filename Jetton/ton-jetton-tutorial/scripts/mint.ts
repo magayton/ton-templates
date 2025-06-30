@@ -11,7 +11,7 @@ export async function run(provider: NetworkProvider) {
 
     // Replace with the recipient address
     const recipientAddress = Address.parse('RECIPIENT_ADDRESS_HERE');
-    
+
     // Amount to mint (in nanotons for convenience)
     const mintAmount = toNano('1000'); // 1000 tokens
 

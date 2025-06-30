@@ -20,7 +20,7 @@ export async function run(provider: NetworkProvider) {
 
     console.log(`Contract address: ${jettonMaster.address.toString()}`);
 
-    try {
+    try {
         await jettonMaster.send(
             provider.sender(),
             {
@@ -35,6 +35,6 @@ export async function run(provider: NetworkProvider) {
         console.error('Deployment failed:', error);
         return;
     }
-    
+
     console.log('Jetton Master deployed successfully!');
 }

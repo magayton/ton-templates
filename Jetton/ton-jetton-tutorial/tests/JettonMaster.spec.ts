@@ -13,7 +13,7 @@ describe('JettonMaster', () => {
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
-        
+
         deployer = await blockchain.treasury('deployer');
         user1 = await blockchain.treasury('user1');
         user2 = await blockchain.treasury('user2');
@@ -44,11 +44,11 @@ describe('JettonMaster', () => {
     describe('Deployment', () => {
         it('should deploy correctly with initial parameters', async () => {
             const jettonData = await jettonMaster.getGetJettonData();
-            
+
             expect(jettonData.totalSupply).toBe(0n);
             expect(jettonData.mintable).toBe(true);
             expect(jettonData.adminAddress.toString()).toBe(deployer.address.toString());
-            
+
             // Test offchain content format (0x01 prefix + metadata URI stored directly)
             const expectedContent = beginCell()
                 .storeUint(0x01, 8)
@@ -68,7 +68,7 @@ describe('JettonMaster', () => {
         it('should mint tokens to new user and deploy wallet', async () => {
             const mintAmount = toNano('100');
             const initialTotalSupply = (await jettonMaster.getGetJettonData()).totalSupply;
-            
+
             const mintResult = await jettonMaster.send(
                 deployer.getSender(),
                 { value: toNano('0.5') },
@@ -86,9 +86,9 @@ describe('JettonMaster', () => {
 
             // Check mint transaction was successful
             expect(mintResult.transactions).toHaveTransaction({
-                 from: deployer.address,
-                 to: jettonMaster.address,
-                 success: true
+                from: deployer.address,
+                to: jettonMaster.address,
+                success: true
             });
 
             // Check wallet deployment transaction
@@ -165,7 +165,7 @@ describe('JettonMaster', () => {
 
         it('should fail mint when not owner', async () => {
             const mintAmount = toNano('100');
-            
+
             const mintResult = await jettonMaster.send(
                 user1.getSender(),
                 { value: toNano('0.5') },
@@ -201,7 +201,7 @@ describe('JettonMaster', () => {
             );
 
             const mintAmount = toNano('100');
-            
+
             const mintResult = await jettonMaster.send(
                 deployer.getSender(),
                 { value: toNano('0.5') },
@@ -227,7 +227,7 @@ describe('JettonMaster', () => {
 
         it('should fail mint with insufficient gas', async () => {
             const mintAmount = toNano('100');
-            
+
             const mintResult = await jettonMaster.send(
                 deployer.getSender(),
                 { value: toNano('0.01') }, // Too low gas
@@ -274,7 +274,7 @@ describe('JettonMaster', () => {
         it('should transfer tokens between users', async () => {
             const user1JettonWallet = await jettonMaster.getGetWalletAddress(user1.address);
             const user1Wallet = blockchain.openContract(JettonWallet.fromAddress(user1JettonWallet));
-            
+
             const transferAmount = toNano('100');
             const transferResult = await user1Wallet.send(
                 user1.getSender(),
@@ -311,7 +311,7 @@ describe('JettonMaster', () => {
         it('should fail transfer with insufficient balance', async () => {
             const user1WalletAddress = await jettonMaster.getGetWalletAddress(user1.address);
             const user1Wallet = blockchain.openContract(JettonWallet.fromAddress(user1WalletAddress));
-            
+
             const transferAmount = toNano('2000'); // More than balance
             const transferResult = await user1Wallet.send(
                 user1.getSender(),
@@ -339,7 +339,7 @@ describe('JettonMaster', () => {
         it('should fail transfer with insufficient gas', async () => {
             const user1WalletAddress = await jettonMaster.getGetWalletAddress(user1.address);
             const user1Wallet = blockchain.openContract(JettonWallet.fromAddress(user1WalletAddress));
-            
+
             const transferAmount = toNano('100');
             const transferResult = await user1Wallet.send(
                 user1.getSender(),
@@ -508,7 +508,7 @@ describe('JettonMaster', () => {
     describe('Admin Operations', () => {
         it('should change metadata URI when owner', async () => {
             const newMetadata = 'https://newexample.com/metadata.json';
-            
+
             const updateResult = await jettonMaster.send(
                 deployer.getSender(),
                 { value: toNano('0.05') },
@@ -536,7 +536,7 @@ describe('JettonMaster', () => {
 
         it('should fail to change metadata URI when not owner', async () => {
             const newMetadata = 'https://newexample.com/metadata.json';
-            
+
             const updateResult = await jettonMaster.send(
                 user1.getSender(),
                 { value: toNano('0.05') },

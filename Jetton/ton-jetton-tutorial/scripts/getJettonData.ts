@@ -13,7 +13,7 @@ export async function run(provider: NetworkProvider) {
         // Get Jetton Master data
         console.log('=== Jetton Master Data ===');
         const jettonData = await jettonMaster.getGetJettonData();
-        
+
         console.log(`Total Supply: ${jettonData.totalSupply}`);
         console.log(`Mintable: ${jettonData.mintable}`);
         console.log(`Admin Address: ${jettonData.adminAddress.toString()}`);

@@ -16,7 +16,7 @@ export async function run(provider: NetworkProvider) {
 
     // Replace with the destination address
     const destinationAddress = Address.parse('RECIPIENT_TRANSFER_HERE');
-    
+
     // Amount to transfer
     const transferAmount = toNano('100');
 
@@ -37,7 +37,7 @@ export async function run(provider: NetworkProvider) {
                 destination: destinationAddress,
                 responseDestination: provider.sender().address!,
                 customPayload: null,
-                forwardTonAmount: 0n, 
+                forwardTonAmount: 0n,
                 forwardPayload: beginCell().endCell().asSlice()
             }
         );
